@@ -1,8 +1,8 @@
 {
-  "name": "terraswap-web-app",
+  "name": "quadswap-web-app",
   "version": "1.0.0",
-  "homepage": "https://app.terraswap.com",
-  "repository": "github:terraswap/terraswap-web-app",
+  "homepage": "https://app.quadswap.finance",
+  "repository": "github:renchris/quadswap-web-app",
   "author": "DELIGHT <member@delightlabs.io>",
   "license": "Apache-2.0",
   "dependencies": {
@@ -39,7 +39,7 @@
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
     "node-polyfill-webpack-plugin": "^1.1.4",
-    "node-sass": "^4.14.1",
+    "node-sass": "^7.0.1",
     "numeral": "^2.0.6",
     "prettier": "^2.1.2",
     "querystring": "^0.2.1",

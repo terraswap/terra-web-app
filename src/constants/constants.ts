@@ -93,7 +93,7 @@ export const MEDIUM = ""
 export const DISCORD = ""
 export const TELEGRAM = ""
 export const WECHAT = ""
-export const GITHUB = "https://github.com/DELIGHT-LABS/terraswap-web-app"
+export const GITHUB = "https://github.com/renchris/quadswap-web-app"
 
 export const socialMediaList = [
   {

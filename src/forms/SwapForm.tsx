@@ -101,21 +101,24 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
   const { post: terraExtensionPost } = useWallet()
   const { terra } = useLCDClient()
   const settingsModal = useModal()
-  const [slippageSettings, setSlippageSettings] =
-    useLocalStorage<SettingValues>("slippage", {
+  const [settingValues, setSettingValues] = useLocalStorage<SettingValues>(
+    "slippage",
+    {
       slippage: `${DEFAULT_MAX_SPREAD}`,
       custom: "",
-    })
+      routeHopCount: "3",
+    }
+  )
   const slippageTolerance = useMemo(() => {
     // 1% = 0.01
     return `${(
       parseFloat(
-        (slippageSettings?.slippage === "custom"
-          ? slippageSettings.custom
-          : slippageSettings.slippage) || `${DEFAULT_MAX_SPREAD}`
+        (settingValues?.slippage === "custom"
+          ? settingValues.custom
+          : settingValues.slippage) || `${DEFAULT_MAX_SPREAD}`
       ) / 100
     ).toFixed(3)}`
-  }, [slippageSettings])
+  }, [settingValues])
 
   const { pairs, isLoading: isPairsLoading } = usePairs()
   const balanceKey = {
@@ -311,6 +314,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     to: to,
     amount: formData[Key.value1],
     type: formState.isSubmitted ? undefined : type,
+    hopCount: settingValues?.routeHopCount,
   })
 
   const { result: poolResult, poolLoading } = usePool(
@@ -877,6 +881,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
               ),
               18
             )}`,
+            hop_count: settingValues?.routeHopCount,
           })
         } else {
           msgs = await generateContractMessages(
@@ -889,6 +894,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
                 from: `${from}`,
                 to: `${to}`,
                 slippage: slippageTolerance,
+                hop_count: settingValues?.routeHopCount,
               },
               [Type.WITHDRAW]: {
                 type: Type.WITHDRAW,
@@ -927,6 +933,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
       }
     },
     [
+      settingValues,
       settingsModal,
       type,
       getSymbol,
@@ -1009,9 +1016,9 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
               component: (
                 <Container sm>
                   <Settings
-                    values={slippageSettings}
+                    values={settingValues}
                     onChange={(settings) => {
-                      setSlippageSettings(settings)
+                      setSettingValues(settings)
                     }}
                   />
                 </Container>

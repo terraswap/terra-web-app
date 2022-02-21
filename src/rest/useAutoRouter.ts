@@ -13,6 +13,7 @@ type Params = {
   amount: number | string
   type?: Type
   slippageTolerance?: string | number
+  hopCount?: number | string
 }
 
 function sleep(t: number) {
@@ -21,7 +22,7 @@ function sleep(t: number) {
 
 const useAutoRouter = (params: Params) => {
   const walletAddress = useAddress()
-  const { from, to, type, amount: _amount, slippageTolerance } = params
+  const { from, to, type, amount: _amount, slippageTolerance, hopCount = 3 } = params
   const amount = Number(_amount)
   const { generateContractMessages, querySimulate } = useAPI()
   const [isLoading, setIsLoading] = useState(false)
@@ -97,13 +98,13 @@ const useAutoRouter = (params: Params) => {
   }, [to, amount, msgs, simulatedAmounts])
 
   useEffect(() => {
-    let isCanceled = false
+    let isCanceled = false;
     const fetchMessages = async () => {
       if (!from || !to || !amount || !type) {
-        return
+        return;
       }
       if (type === Type.PROVIDE || type === Type.WITHDRAW) {
-        return
+        return;
       }
 
       const res: MsgExecuteContract[] = await generateContractMessages({
@@ -114,23 +115,25 @@ const useAutoRouter = (params: Params) => {
         sender: walletAddress,
         max_spread: `${slippageTolerance || 0.01}`,
         belief_price: 0,
-      })
+        hop_count: `${hopCount}`,
+      });
       if (Array.isArray(res) && !isCanceled) {
-        setMsgs(res)
+        setMsgs(res);
       }
-    }
-    setIsLoading(true)
-    setMsgs([])
-    setSimulatedAmounts([])
+    };
+    setIsLoading(true);
+    setMsgs([]);
+    setSimulatedAmounts([]);
     const timerId = setTimeout(() => {
-      fetchMessages()
-    }, 500)
+      fetchMessages();
+    }, 500);
 
     return () => {
-      clearTimeout(timerId)
-      isCanceled = true
-    }
+      clearTimeout(timerId);
+      isCanceled = true;
+    };
   }, [
+    hopCount,
     amount,
     from,
     generateContractMessages,
@@ -139,7 +142,7 @@ const useAutoRouter = (params: Params) => {
     autoRefreshTicker,
     walletAddress,
     slippageTolerance,
-  ])
+  ]);
 
   useEffect(() => {
     const timerId = setInterval(() => {

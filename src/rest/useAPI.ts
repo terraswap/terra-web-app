@@ -339,6 +339,7 @@ const useAPI = () => {
             max_spread: number | string
             belief_price: number | string
             sender: string
+            hop_count?: string
           }
         | {
             type: Type.PROVIDE
@@ -348,6 +349,7 @@ const useAPI = () => {
             toAmount: number | string
             slippage: number | string
             sender: string
+            hop_count?: string
           }
         | {
             type: Type.WITHDRAW

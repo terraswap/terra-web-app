@@ -80,30 +80,21 @@ const Settings = ({ values, onChange }: SettingsProps) => {
       >
         Your transaction may fail.
       </div>
-      <br />
-      <br />
-      <div className={styles.title}>Route hop</div>
+      <div className={styles.title}>Router Setting</div>
       <div className={styles["radio-group"]}>
-        {["1", "3", "5", "99"].map((value) => (
+        {["0", "1", "2", "3", "4"].map((value) => (
           <label key={value} className={styles["radio-group__item"]}>
             <input
               type="radio"
               value={value}
               {...form.register("routeHopCount")}
             />
-            <div>{value === "99" ? "∞" : `≤${value}`}</div>
+            <div style={{ textTransform: "capitalize" }}>
+              {value === "0" ? "Off" : value}
+            </div>
           </label>
         ))}
       </div>
-      <div
-        className={[
-          styles.caption,
-          !isDangerous && styles["caption--invisible"],
-        ].join(" ")}
-      >
-        Simulation may take a long time.
-      </div>
-      <br />
     </div>
   )
 }

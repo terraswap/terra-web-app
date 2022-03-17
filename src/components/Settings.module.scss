@@ -21,7 +21,7 @@
   letter-spacing: normal;
   text-align: left;
   color: $deepgray;
-  margin-bottom: 8px;
+  margin-bottom: 15px;
 }
 
 .caption {
@@ -39,6 +39,7 @@
   color: $deepgray;
   max-height: 9999px;
   transition: all 0.2s ease-in-out;
+  margin-bottom: 7px;
 
   &--invisible {
     max-height: 0;

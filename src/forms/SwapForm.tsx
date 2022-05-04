@@ -159,16 +159,22 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData])
 
-  const handleToken1Select = (token: string) => {
+  const handleToken1Select = (token: string, isUnable?: boolean) => {
     setValue(Key.token1, token)
     if (!formData[Key.value1]) {
       setFocus(Key.value1)
     }
+    if (isUnable) {
+      setValue(Key.token2, "")
+    }
   }
-  const handleToken2Select = (token: string) => {
+  const handleToken2Select = (token: string, isUnable?: boolean) => {
     setValue(Key.token2, token)
     if (!formData[Key.value2]) {
       setFocus(Key.value2)
+    }
+    if (isUnable) {
+      setValue(Key.token1, "")
     }
   }
   const handleSwitchToken = () => {

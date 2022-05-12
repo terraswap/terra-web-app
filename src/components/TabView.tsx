@@ -104,7 +104,17 @@ const TabView: FC<PropsWithChildren<TabViewProps>> = ({
                   url={""}
                   name={""}
                 >
-                  <Card shadow={shadow}>{item.visible && item.component}</Card>
+                  <div
+                    style={{
+                      width: "auto",
+                      maxWidth: "calc(100vw - 32px)",
+                      margin: "0 auto",
+                    }}
+                  >
+                    <Card shadow={shadow}>
+                      {item.visible && item.component}
+                    </Card>
+                  </div>
                 </Modal>
               )}
             </React.Fragment>

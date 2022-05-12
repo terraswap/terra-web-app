@@ -54,6 +54,7 @@
   margin-bottom: 4px;
 
   &__item {
+    flex: 1;
     margin-right: 4px;
     &:last-child {
       margin-right: unset;
@@ -69,7 +70,7 @@
     }
 
     & div {
-      min-width: 52px;
+      width: 100%;
       display: inline-block;
       border-radius: 8px;
       background-color: #ffffff;
@@ -92,7 +93,7 @@
       }
 
       & input {
-        width: 48px;
+        width: 50%;
         border: none;
         background-color: transparent;
         color: $blue;

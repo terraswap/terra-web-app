@@ -51,7 +51,11 @@ const Settings = ({ values, onChange }: SettingsProps) => {
       <div className={styles.title}>Slippage Tolerance</div>
       <div className={styles["radio-group"]}>
         {["0.1", "0.5", "1", "custom"].map((value) => (
-          <label key={value} className={styles["radio-group__item"]}>
+          <label
+            key={value}
+            className={styles["radio-group__item"]}
+            style={value === "custom" ? { flex: 1.5 } : {}}
+          >
             <input type="radio" value={value} {...form.register("slippage")} />
             <div>
               {value === "custom" ? (
@@ -59,6 +63,7 @@ const Settings = ({ values, onChange }: SettingsProps) => {
                   type="number"
                   min={0}
                   step={0.01}
+                  max={100}
                   onFocus={() => {
                     form.setValue("slippage", "custom")
                   }}
@@ -80,7 +85,7 @@ const Settings = ({ values, onChange }: SettingsProps) => {
       >
         Your transaction may fail.
       </div>
-      <div className={styles.title}>Router Setting</div>
+      <div className={styles.title}>Swap router hop</div>
       <div className={styles["radio-group"]}>
         {["0", "1", "2", "3", "4"].map((value) => (
           <label key={value} className={styles["radio-group__item"]}>

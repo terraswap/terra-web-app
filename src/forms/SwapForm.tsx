@@ -881,7 +881,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
               ),
               18
             )}`,
-            hop_count: settingValues?.routeHopCount,
           })
         } else {
           msgs = await generateContractMessages(
@@ -894,7 +893,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
                 from: `${from}`,
                 to: `${to}`,
                 slippage: slippageTolerance,
-                hop_count: settingValues?.routeHopCount,
               },
               [Type.WITHDRAW]: {
                 type: Type.WITHDRAW,
@@ -933,7 +931,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
       }
     },
     [
-      settingValues,
       settingsModal,
       type,
       getSymbol,

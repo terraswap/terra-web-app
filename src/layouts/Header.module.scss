@@ -8,31 +8,39 @@
   left: 0;
   top: 0;
   padding: 16px 0;
-  background-color: $realblue;
   z-index: 5000;
   transition: padding 0.125s ease-in-out;
   overflow: visible;
   margin-bottom: 50px;
 
-  &::after {
-    content: "";
-    position: absolute;
-    width: 100%;
-    height: 1px;
-    left: 0;
-    bottom: 0;
-    background-color: #ffffff;
-    opacity: 0.15;
-
-    @include mobile {
-      bottom: 0;
-    }
+  @include mobile {
+    background-color: $realblue;
   }
+
+  // &::after {
+  //   content: "";
+  //   position: absolute;
+  //   width: 100%;
+  //   height: 1px;
+  //   left: 0;
+  //   bottom: 0;
+  //   background-color: #ffffff;
+  //   opacity: 0.15;
+
+  //   @include mobile {
+  //     bottom: 0;
+  //   }
+  // }
 
   & .container {
     position: relative;
     left: 0;
     top: 0;
+  }
+
+  & .radio-group {
+    display: flex;
+    gap: 10px;
   }
 
   & .wrapper,
@@ -47,6 +55,7 @@
     top: 0;
     left: 0;
     padding: 16px 0;
+    height: 64px;
     z-index: 4850;
 
     & .support {
@@ -70,5 +79,8 @@
 .container {
   @include desktop {
     @include flex(space-between);
+  }
+  @include mobile {
+    @include flex(center);
   }
 }

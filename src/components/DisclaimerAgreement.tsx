@@ -52,6 +52,16 @@ const ModalTitle = styled.div`
   color: #0222ba;
   margin-bottom: 30px;
 `
+
+const Content = styled.div`
+  border-radius: 12px;
+  border: solid 1px #b5b5b5;
+  background-color: #fff;
+  padding: 12px;
+  margin-bottom: 30px;
+  max-height: 115px;
+  overflow-y: auto;
+`
 const Disclaimer = () => {
   const [disclaimerAgreed, setDisclaimerAgreed] = useState(false)
 
@@ -71,8 +81,17 @@ const Disclaimer = () => {
     <Modal isOpen={disclaimerModal.isOpen} close={() => {}} open={() => {}}>
       <ModalContent>
         <div>
-          <ModalTitle>Please read before using Terraswap</ModalTitle>
-          <div>
+          <ModalTitle>You are accessing Terraswap</ModalTitle>
+          <Content>
+            Terraswap is a community dex. Terraswap team does not make any
+            financial profit from it. We built Terraswap to support the
+            community because we do believe our devotion makes the community
+            stronger.
+          </Content>
+          <ModalTitle style={{ fontSize: 16, marginBottom: 15 }}>
+            Disclaimer
+          </ModalTitle>
+          <Content>
             Terraswap is a decentralized exchange on Terra blockchain. Trading
             and providing liquidity on Terraswap is at your own risk, without
             warranties of any kind. Please read the&nbsp;
@@ -85,15 +104,13 @@ const Disclaimer = () => {
               document
             </a>
             &nbsp;carefully and understand how Terraswap works before using it.
-          </div>
-          <br />
-          <div style={{ marginBottom: 30 }}>
-            I acknowledge and agree that I am responsible for various losses of
-            assets by making transactions on Terraswap, including swap,
-            liquidity provision/withdrawal, etc. The entities involved in this
-            site are not liable for any damages resulting from my use of
+            <br />
+            <br />I acknowledge and agree that I am responsible for various
+            losses of assets by making transactions on Terraswap, including
+            swap, liquidity provision/withdrawal, etc. The entities involved in
+            this site are not liable for any damages resulting from my use of
             Terraswap.
-          </div>
+          </Content>
           <div
             style={{ textAlign: "center", padding: "0 26px", marginBottom: 30 }}
           >

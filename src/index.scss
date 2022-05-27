@@ -12,8 +12,10 @@ body,
   font-size: $font-size;
   position: relative;
   background-color: $realblue;
+  background-image: url("images/img-background.png");
+  background-size: cover;
   background-repeat: no-repeat;
-  background-position: 50% calc(100% + 180px);
+  background-position: 50% 50%;
   font-family: $font-family-swap;
   padding-bottom: $footer-height;
   background-attachment: fixed;

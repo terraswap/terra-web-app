@@ -49,6 +49,7 @@ import { useLCDClient } from "layouts/WalletConnectProvider"
 import { useContractsAddress } from "hooks/useContractsAddress"
 import WarningModal from "components/Warning"
 import Disclaimer from "components/DisclaimerAgreement"
+import Loading from "components/Loading"
 
 enum Key {
   value1 = "value1",
@@ -80,6 +81,60 @@ const Warning = {
   color: "red",
   FontWeight: "bold",
 }
+
+const Maintenance = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+
+  color: #0222ba;
+  z-index: 9999999;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 15px;
+
+  &::before {
+    content: "";
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    filter: blur(4px);
+    z-index: 1;
+    border-radius: 15px;
+  }
+
+  & > div {
+    z-index: 2;
+
+    font-size: 20px;
+    font-weight: bold;
+    font-stretch: normal;
+    font-style: normal;
+    line-height: 1.35;
+    letter-spacing: normal;
+    text-align: center;
+    color: #0222ba;
+    padding: 20px;
+
+    & > span {
+      display: block;
+      font-size: 16px;
+      font-weight: 400;
+    }
+  }
+`
 
 const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
   const connectModal = useConnectModal()
@@ -1216,6 +1271,27 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
               />
             </div>
           </Container>
+          <Maintenance>
+            <div>
+              <Loading color="#0222ba" size={36} />
+              <br />
+              Terraswap for Terra 2.0 is <br /> under construction.
+              <br />
+              <br />
+              <span>
+                Stay tuned for updates on{" "}
+                <a
+                  href="https://twitter.com/terraswap_io"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  style={{ textDecoration: "underline" }}
+                >
+                  Twitter
+                </a>
+                .
+              </span>
+            </div>
+          </Maintenance>
         </TabView>
       </form>
       <WarningModal {...warningModal} />

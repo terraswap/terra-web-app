@@ -1,4 +1,5 @@
 import iconArrowLeft from "images/icon-arrow-left.svg"
+import iconArrowLeftPrimary from "images/icon-arrow-left-primary.svg"
 import styled from "styled-components"
 
 const Button = styled.button`
@@ -20,6 +21,8 @@ const Button = styled.button`
   letter-spacing: normal;
   color: #fff;
 
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+
   &::before {
     content: "";
     display: inline-block;
@@ -34,6 +37,16 @@ const Button = styled.button`
     background-size: contain;
     background-repeat: no-repeat;
     background-position: 50% 50%;
+
+    transition: background-image 0.1s step-end;
+  }
+
+  &:hover {
+    background-color: #ffffff;
+    color: #0222ba;
+    &::before {
+      background-image: url(${iconArrowLeftPrimary});
+    }
   }
 `
 

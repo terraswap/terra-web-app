@@ -5,11 +5,11 @@
   @include flex;
   @include transition(background-color);
 
-  background-color: #ffffff;
+  background-color: transparent;
   border-radius: 50px;
   border-width: 1px;
   border-style: solid;
-  color: $realblue;
+  color: white;
   font-size: 14px;
   font-weight: 600;
   height: 38px;
@@ -21,7 +21,7 @@
   }
 
   &:hover {
-    background-color: fade-out(#ffffffee, 0);
+    background-color: fade-out(#ffffff, 0);
     color: fade-out($blue, 0);
     text-decoration: none;
   }

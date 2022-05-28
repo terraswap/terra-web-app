@@ -1,30 +1,11 @@
 import { useAddress, useNetwork } from "hooks"
-import {
-  UAUD as VAUD,
-  UCAD,
-  UCHF,
-  UCNY,
-  UEUR,
-  UGBP,
-  UHKD,
-  UINR,
-  UJPY,
-  UKRW,
-  ULUNA,
-  UMNT,
-  USDR,
-  USGD,
-  UTHB,
-  UUSD,
-} from "constants/constants"
+
 import { useCallback } from "react"
-import useURL from "graphql/useURL"
-import terraswapConfig from "constants/terraswap.json"
+import useURL from "hooks/useURL"
 import axios from "./request"
 import { Type } from "pages/Swap"
 import { Msg } from "@terra-money/terra.js"
 import { AxiosError } from "axios"
-import { useContractsAddress } from "hooks/useContractsAddress"
 interface DenomBalanceResponse {
   height: string
   result: DenomInfo[]
@@ -42,25 +23,6 @@ interface ContractBalanceResponse {
 
 interface ContractBalance {
   balance: string
-}
-
-interface GasPriceResponse {
-  uluna: string
-  uusd: string
-  usdr: string
-  ukrw: string
-  umnt: string
-  uaud: string
-  ucad: string
-  uchf: string
-  ucny: string
-  ueur: string
-  ugbp: string
-  uhkd: string
-  uinr: string
-  ujpy: string
-  usgd: string
-  uthb: string
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -136,22 +98,6 @@ interface SimulatedData {
   commission_amount: string
   spread_amount: string
 }
-interface TaxResponse {
-  height: string
-  result: string
-}
-
-const blacklist = terraswapConfig.blacklist.map(
-  (blacklist) => blacklist.contract_addr
-)
-
-const isBlacklisted = (info: NativeInfo | AssetInfo) => {
-  if (!isAssetInfo(info) || !blacklist.includes(info.token.contract_addr)) {
-    return false
-  }
-
-  return true
-}
 
 export function isAssetInfo(object: any): object is AssetInfo {
   return "token" in object
@@ -164,7 +110,6 @@ export function isNativeInfo(object: any): object is NativeInfo {
 const useAPI = () => {
   const { fcd, factory, service } = useNetwork()
   const address = useAddress()
-  const { getSymbol } = useContractsAddress()
   const getURL = useURL()
 
   // useBalance
@@ -185,40 +130,10 @@ const useAPI = () => {
 
   // useGasPrice
 
-  const loadGasPrice = useCallback(
-    async (symbol: string) => {
-      const symbolName = getSymbol(symbol) || symbol
-      const url = `${fcd}/v1/txs/gas_prices`
-      const res: GasPriceResponse = (await axios.get(url)).data
-
-      let gasPrice = "0"
-      if (
-        [
-          UUSD,
-          UKRW,
-          UMNT,
-          ULUNA,
-          USDR,
-          VAUD,
-          UCAD,
-          UCHF,
-          UCNY,
-          UEUR,
-          UGBP,
-          UHKD,
-          UINR,
-          UJPY,
-          USGD,
-          UTHB,
-        ].includes(symbolName)
-      ) {
-        gasPrice = (res as any)?.[symbolName]
-      }
-
-      return gasPrice
-    },
-    [fcd, getSymbol]
-  )
+  // deprecated
+  const loadGasPrice = useCallback(async (symbol?: string) => {
+    return "11"
+  }, [])
 
   // usePairs
   const loadPairs = useCallback(async () => {
@@ -231,16 +146,10 @@ const useAPI = () => {
       const url = `${service}/pairs`
       const res: PairsResult = (await axios.get(url)).data
 
-      if (res.pairs.length !== 0) {
-        res.pairs
-          .filter(
-            (pair) =>
-              !isBlacklisted(pair?.asset_infos?.[0]) &&
-              !isBlacklisted(pair?.asset_infos?.[1])
-          )
-          .forEach((pair) => {
-            result.pairs.push(pair)
-          })
+      if (res?.pairs?.length) {
+        res.pairs.forEach((pair) => {
+          result.pairs.push(pair)
+        })
 
         return result
       }
@@ -263,15 +172,9 @@ const useAPI = () => {
         break
       }
 
-      pairs.result.pairs
-        .filter(
-          (pair) =>
-            !isBlacklisted(pair?.asset_infos?.[0]) &&
-            !isBlacklisted(pair?.asset_infos?.[1])
-        )
-        .forEach((pair) => {
-          result.pairs.push(pair)
-        })
+      pairs.result.pairs.forEach((pair) => {
+        result.pairs.push(pair)
+      })
       lastPair = pairs.result.pairs.slice(-1)[0]?.asset_infos
     }
     return result
@@ -361,8 +264,11 @@ const useAPI = () => {
       const res = (await axios.get(url, { params })).data
       return res.map((data: Msg.Amino | Msg.Amino[]) => {
         return (Array.isArray(data) ? data : [data]).map((item: Msg.Amino) => {
-          const result = Msg.fromAmino(item, true)
-          return result
+          const result = Msg.fromAmino(item)
+          if ((result as any)?.execute_msg) {
+            return result
+          }
+          return Msg.fromAmino(item, true)
         })
       })
     },
@@ -370,31 +276,15 @@ const useAPI = () => {
   )
 
   // useTax
-  const loadTaxInfo = useCallback(
-    async (contract_addr: string) => {
-      if (!contract_addr) {
-        return ""
-      }
-
-      let taxCap = ""
-      try {
-        const url = `${fcd}/treasury/tax_cap/${contract_addr}`
-        const res: TaxResponse = (await axios.get(url)).data
-        taxCap = res.result
-      } catch (error) {
-        console.error(error)
-      }
-
-      return taxCap
-    },
-    [fcd]
-  )
+  // deprecated
+  const loadTaxInfo = useCallback(async (contract_addr?: string) => {
+    return ""
+  }, [])
 
   const loadTaxRate = useCallback(async () => {
-    const url = `${fcd}/treasury/tax_rate`
-    const res: TaxResponse = (await axios.get(url)).data
-    return res.result
-  }, [fcd])
+    // deprecated
+    return "0.000000000000000000"
+  }, [])
 
   return {
     loadDenomBalance,

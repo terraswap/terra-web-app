@@ -4,12 +4,9 @@ import {
   ContractsAddressProvider,
   useContractsAddressState,
 } from "../hooks/useContractsAddress"
-import { useContractsAddressTokenState } from "../hooks/useContractsAddressToken"
-import { ContractsAddressTokenProvider } from "../hooks/useContractsAddressToken"
 
 const Contract: React.FC<PropsWithChildren<{}>> = ({ children }) => {
   const contractsAddress = useContractsAddressState()
-  const contractsAddressToken = useContractsAddressTokenState()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   useEffect(() => {
@@ -26,9 +23,7 @@ const Contract: React.FC<PropsWithChildren<{}>> = ({ children }) => {
     <UnsupportedNetworkModal isOpen={isModalOpen} />
   ) : (
     <ContractsAddressProvider value={contractsAddress}>
-      <ContractsAddressTokenProvider value={contractsAddressToken}>
-        {children}
-      </ContractsAddressTokenProvider>
+      {children}
     </ContractsAddressProvider>
   )
 }

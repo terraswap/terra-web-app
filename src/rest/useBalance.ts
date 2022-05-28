@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react"
-import { useContractsAddress } from "hooks/useContractsAddress"
 import { useAddress } from "../hooks"
 import useAPI from "./useAPI"
 
 export default (contractAddress: string, symbol: string) => {
   const address = useAddress()
-  const { getSymbol } = useContractsAddress()
 
   const { loadDenomBalance, loadContractBalance } = useAPI()
 
@@ -52,14 +50,7 @@ export default (contractAddress: string, symbol: string) => {
     return () => {
       isAborted = true
     }
-  }, [
-    address,
-    getSymbol,
-    loadContractBalance,
-    loadDenomBalance,
-    contractAddress,
-    symbol,
-  ])
+  }, [address, loadContractBalance, loadDenomBalance, contractAddress, symbol])
 
   return { balance }
 }

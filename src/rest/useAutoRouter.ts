@@ -228,11 +228,19 @@ const useAutoRouter = (params: Params) => {
           setSimulatedAmounts(
             result
               .map((item) => {
+                // Classic
                 if (item?.result?.return_amount) {
                   return parseInt(item?.result?.return_amount, 10)
                 }
                 if (item?.result?.amount) {
                   return parseInt(item?.result?.amount, 10)
+                }
+                // 2.0
+                if (item?.data?.return_amount) {
+                  return parseInt(item?.data?.return_amount, 10)
+                }
+                if (item?.data?.amount) {
+                  return parseInt(item?.data?.amount, 10)
                 }
                 return -1
               })
@@ -250,6 +258,11 @@ const useAutoRouter = (params: Params) => {
       isCanceled = true
     }
   }, [amount, from, msgs, querySimulate])
+
+  useEffect(() => {
+    console.log("simulatedAmounts")
+    console.log(simulatedAmounts)
+  }, [simulatedAmounts])
 
   const result = useMemo(() => {
     if (!from || !to || !type || !amount) {

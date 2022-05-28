@@ -5,10 +5,10 @@ import ExtLink from "../components/ExtLink"
 import styles from "./TxHash.module.scss"
 
 const TxHash = ({ children: hash }: { children: string }) => {
-  const { finder } = useNetwork()
+  const { getFinderUrl } = useNetwork()
 
   return (
-    <ExtLink href={finder(hash, "tx")} className={styles.link}>
+    <ExtLink href={getFinderUrl(hash, "tx")} className={styles.link}>
       {truncate(hash, [10, 10])}
     </ExtLink>
   )

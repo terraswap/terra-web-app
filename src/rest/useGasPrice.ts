@@ -1,18 +1,7 @@
-import { useEffect, useState } from "react"
-import useAPI from "./useAPI"
+import { useNetwork } from "hooks"
 
 export default (symbol: string) => {
-  const [gasPrice, setGasPrice] = useState<string>()
-  const { loadGasPrice } = useAPI()
-  useEffect(() => {
-    try {
-      loadGasPrice(symbol).then((result) => {
-        setGasPrice(result)
-      })
-    } catch (e) {
-      setGasPrice("0");
-    }
-  }, [loadGasPrice, symbol])
+  const network = useNetwork()
 
-  return { gasPrice };
-};
+  return { gasPrice: network.fee.gasPrice }
+}

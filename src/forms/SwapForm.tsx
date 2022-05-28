@@ -5,11 +5,16 @@ import { SubmitHandler, useForm, WatchObserver } from "react-hook-form"
 import Result from "./Result"
 import TabView from "components/TabView"
 import { useSearchParams } from "react-router-dom"
-import { UST, DEFAULT_MAX_SPREAD, ULUNA } from "constants/constants"
-import { useNetwork, useContract, useAddress, useConnectModal } from "hooks"
-import { lookup, decimal, toAmount } from "libs/parse"
+import { DEFAULT_MAX_SPREAD, LUNA, ULUNA } from "constants/constants"
+import { useNetwork, useAddress, useConnectModal } from "hooks"
+import {
+  lookup,
+  decimal,
+  toAmount,
+  findTokenInfoBySymbolOrContractAddr,
+} from "libs/parse"
 import calc from "helpers/calc"
-import { PriceKey, BalanceKey, AssetInfoKey } from "hooks/contractKeys"
+import { PriceKey, BalanceKey } from "hooks/contractKeys"
 import Count from "components/Count"
 import {
   validate as v,
@@ -30,7 +35,7 @@ import { hasTaxToken } from "helpers/token"
 import { Coins, CreateTxOptions } from "@terra-money/terra.js"
 import { Type } from "pages/Swap"
 import usePool from "rest/usePool"
-import { insertIf } from "libs/utils"
+import { insertIf, isNativeToken } from "libs/utils"
 import { percent } from "libs/num"
 import SvgArrow from "images/arrow.svg"
 import SvgPlus from "images/plus.svg"
@@ -38,18 +43,15 @@ import Button from "components/Button"
 import MESSAGE from "lang/MESSAGE.json"
 import SwapConfirm from "./SwapConfirm"
 import useAPI from "rest/useAPI"
-import { TxResult, useWallet } from "@terra-money/wallet-provider"
+import { TxResult, useLCDClient, useWallet } from "@terra-money/wallet-provider"
 import iconSettings from "images/icon-settings.svg"
 import iconReload from "images/icon-reload.svg"
 import { useModal } from "components/Modal"
 import Settings, { SettingValues } from "components/Settings"
 import useLocalStorage from "libs/useLocalStorage"
 import useAutoRouter from "rest/useAutoRouter"
-import { useLCDClient } from "layouts/WalletConnectProvider"
-import { useContractsAddress } from "hooks/useContractsAddress"
 import WarningModal from "components/Warning"
 import Disclaimer from "components/DisclaimerAgreement"
-import Loading from "components/Loading"
 
 enum Key {
   value1 = "value1",
@@ -69,7 +71,6 @@ enum Key {
 }
 
 const priceKey = PriceKey.PAIR
-const infoKey = AssetInfoKey.COMMISSION
 
 const Wrapper = styled.div`
   width: 100%;
@@ -81,60 +82,6 @@ const Warning = {
   color: "red",
   FontWeight: "bold",
 }
-
-const Maintenance = styled.div`
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  left: 0;
-  top: 0;
-
-  color: #0222ba;
-  z-index: 99;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 15px;
-
-  &::before {
-    content: "";
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    left: 0;
-    top: 0;
-    background: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    filter: blur(4px);
-    z-index: 1;
-    border-radius: 15px;
-  }
-
-  & > div {
-    z-index: 2;
-
-    font-size: 20px;
-    font-weight: bold;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1.35;
-    letter-spacing: normal;
-    text-align: center;
-    color: #0222ba;
-    padding: 20px;
-
-    & > span {
-      display: block;
-      font-size: 16px;
-      font-weight: 400;
-    }
-  }
-`
 
 const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
   const connectModal = useConnectModal()
@@ -148,13 +95,11 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
   const tokenInfos = useTokenInfos()
   const lpTokenInfos = useLpTokenInfos()
 
-  const { getSymbol, isNativeToken } = useContractsAddress()
   const { loadTaxInfo, loadTaxRate, generateContractMessages } = useAPI()
   const { fee } = useNetwork()
-  const { find } = useContract()
   const walletAddress = useAddress()
   const { post: terraExtensionPost } = useWallet()
-  const { terra } = useLCDClient()
+  const terra = useLCDClient()
   const settingsModal = useModal()
   const [slippageSettings, setSlippageSettings] =
     useLocalStorage<SettingValues>("slippage", {
@@ -184,7 +129,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
       [Key.value1]: "",
       [Key.value2]: "",
       [Key.feeValue]: "",
-      [Key.feeSymbol]: UST,
+      [Key.feeSymbol]: LUNA,
       [Key.load]: "",
       [Key.symbol1]: "",
       [Key.symbol2]: "",
@@ -422,7 +367,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
       ? calc.minimumReceived({
           expectedAmount: `${profitableQuery?.simulatedAmount}`,
           max_spread: String(slippageTolerance),
-          commission: find(infoKey, formData[Key.symbol2]),
+          commission: "0",
           decimals: tokenInfo1?.decimals,
         })
       : "0"
@@ -543,7 +488,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     type,
     profitableQuery,
     slippageTolerance,
-    find,
     tokenInfo1?.decimals,
     tax,
     poolResult,
@@ -606,7 +550,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
       }
       return [msg]
     },
-    [isNativeToken]
+    []
   )
 
   const { gasPrice } = useGasPrice(formData[Key.feeSymbol])
@@ -917,7 +861,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
               ? calc.minimumReceived({
                   expectedAmount: `${profitableQuery?.simulatedAmount}`,
                   max_spread: String(slippageTolerance),
-                  commission: find(infoKey, formData[Key.symbol2]),
+                  commission: "0",
                   decimals: tokenInfo1?.decimals,
                 })
               : "0",
@@ -961,13 +905,21 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
         let txOptions: CreateTxOptions = {
           msgs,
           memo: undefined,
-          gasPrices: `${gasPrice}${getSymbol(feeSymbol || "")}`,
+          gasPrices: `${gasPrice}${
+            findTokenInfoBySymbolOrContractAddr(feeSymbol)?.contract_addr
+          }`,
         }
+
+        console.log("txOptions")
+        console.log(txOptions)
 
         const signMsg = await terra.tx.create(
           [{ address: walletAddress }],
           txOptions
         )
+
+        console.log("signMsg")
+        console.log(signMsg)
         txOptions.fee = signMsg.auth_info.fee
 
         const extensionResult = await terraExtensionPost(txOptions)
@@ -984,7 +936,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     [
       settingsModal,
       type,
-      getSymbol,
       terra,
       walletAddress,
       terraExtensionPost,
@@ -996,8 +947,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
       tokenInfo2,
       getMsgs,
       profitableQuery,
-      find,
-      formData,
       lpContract,
     ]
   )
@@ -1271,27 +1220,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
               />
             </div>
           </Container>
-          <Maintenance>
-            <div>
-              <Loading color="#0222ba" size={36} />
-              <br />
-              Terraswap for Terra 2.0 is <br /> under construction.
-              <br />
-              <br />
-              <span>
-                Stay tuned for updates on{" "}
-                <a
-                  href="https://twitter.com/terraswap_io"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  style={{ textDecoration: "underline" }}
-                >
-                  Twitter
-                </a>
-                .
-              </span>
-            </div>
-          </Maintenance>
         </TabView>
       </form>
       <WarningModal {...warningModal} />

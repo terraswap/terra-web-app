@@ -1,7 +1,5 @@
 import { FC, useEffect, useMemo, useRef, useState } from "react"
 import classNames from "classnames/bind"
-import { useCombineKeys } from "../hooks"
-import { Config } from "./useSelectAsset"
 import SwapToken from "./SwapToken"
 import styles from "./SwapTokens.module.scss"
 import { lpTokenInfos } from "../rest/usePairs"
@@ -10,16 +8,18 @@ import { tokenInfos } from "../rest/usePairs"
 import Loading from "components/Loading"
 import { SwapTokenAsset } from "./useSwapSelectToken"
 import { VariableSizeList, ListChildComponentProps } from "react-window"
-import { useContractsAddress } from "hooks/useContractsAddress"
+import { isNativeToken } from "libs/utils"
 
 const cx = classNames.bind(styles)
 
-interface Props extends Config {
+interface Props {
   isFrom: boolean
   selected?: string
   onSelect: (asset: string, isUnable?: boolean) => void
   type: string
   assetList?: SwapTokenAsset[]
+  value: string
+  formatTokenName?: (symbol: string) => string
 }
 
 const SwapTokens = ({
@@ -27,13 +27,9 @@ const SwapTokens = ({
   onSelect: handleSelect,
   type,
   assetList,
-  priceKey,
-  balanceKey,
   formatTokenName,
 }: Props) => {
   const listRef = useRef<HTMLUListElement>(null)
-  const { loading } = useCombineKeys([priceKey, balanceKey])
-  const { isNativeToken } = useContractsAddress()
 
   /* search */
   const [searchKeyword, setSearchKeyword] = useState("")
@@ -121,7 +117,7 @@ const SwapTokens = ({
         />
       </section>
 
-      <ul ref={listRef} className={classNames(styles.list, { loading })}>
+      <ul ref={listRef} className={classNames(styles.list)}>
         {assetElements ? (
           <VariableSizeList
             height={listHeight}

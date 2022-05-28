@@ -1,4 +1,4 @@
-import React, { PropsWithChildren } from "react"
+import React, { PropsWithChildren, useMemo } from "react"
 import { useWallet, WalletStatus } from "@terra-money/wallet-provider"
 import { ApolloProvider, ApolloClient, InMemoryCache } from "@apollo/client"
 import { DefaultOptions } from "@apollo/client"
@@ -12,13 +12,6 @@ export const DefaultApolloClientOptions: DefaultOptions = {
 
 const Network: React.FC<PropsWithChildren<{}>> = ({ children }) => {
   const { status } = useWallet()
-  const network = useNetwork()
-  const client = new ApolloClient({
-    uri: network.mantle,
-    cache: new InMemoryCache(),
-    connectToDevTools: true,
-    defaultOptions: DefaultApolloClientOptions,
-  })
 
   return (
     <>
@@ -35,7 +28,7 @@ const Network: React.FC<PropsWithChildren<{}>> = ({ children }) => {
           <Loading />
         </div>
       ) : (
-        <ApolloProvider client={client}>{children}</ApolloProvider>
+        children
       )}
     </>
   )

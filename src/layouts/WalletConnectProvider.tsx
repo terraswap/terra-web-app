@@ -1,56 +1,34 @@
 import {
-  useWallet,
   WalletProvider,
-  NetworkInfo,
+  getChainOptions,
+  WalletControllerChainOptions,
 } from "@terra-money/wallet-provider"
-import React, { PropsWithChildren } from "react"
-import networks from "constants/networks"
+import React, { PropsWithChildren, useEffect, useState } from "react"
 import { useModal } from "components/Modal"
 import ConnectListModal from "./ConnectListModal"
 import { ConnectModalProvider } from "hooks/useConnectModal"
-import { LCDClient } from "@terra-money/terra.js"
-
-const walletConnectChainIds: Record<number, NetworkInfo> = {
-  0: networks.testnet,
-  1: networks.mainnet,
-}
-const defaultNetwork: NetworkInfo = networks.mainnet
 
 const WalletConnectProvider: React.FC<PropsWithChildren<{}>> = ({
   children,
 }) => {
   const modal = useModal()
 
-  return (
-    <WalletProvider
-      defaultNetwork={defaultNetwork}
-      walletConnectChainIds={walletConnectChainIds}
-      connectorOpts={{ bridge: "https://walletconnect.terra.dev/" }}
-    >
+  const [chainOptions, setChainOptions] =
+    useState<WalletControllerChainOptions>()
+
+  useEffect(() => {
+    getChainOptions().then((chainOptions) => setChainOptions(chainOptions))
+  }, [])
+
+  return chainOptions ? (
+    <WalletProvider {...chainOptions}>
       <ConnectModalProvider value={modal}>
         <ConnectListModal {...modal} isCloseBtn />
         {children}
       </ConnectModalProvider>
     </WalletProvider>
+  ) : (
+    <></>
   )
 }
 export default WalletConnectProvider
-
-/* hooks */
-export const useLCD = () => {
-  const { network } = useWallet()
-  const networkInfo = networks[network.name]
-  return networkInfo?.lcd
-}
-
-export const useLCDClient = () => {
-  const { network } = useWallet()
-  const networkInfo = networks[network.name]
-  const terra = new LCDClient({
-    URL: networkInfo?.lcd,
-    chainID: network.chainID,
-    gasAdjustment: 1.5,
-  })
-
-  return { terra }
-}

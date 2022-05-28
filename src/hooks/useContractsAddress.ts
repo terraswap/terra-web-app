@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Dictionary } from "ramda"
 import createContext from "./createContext"
-import { useNetwork } from "hooks"
 import { NATIVE_TOKENS } from "constants/constants"
-import { getSymbol } from "helpers/token"
+import { getSymbol } from "libs/utils"
 
 interface ContractAddressJSON {
   /** Contract addresses */
@@ -17,8 +16,6 @@ interface ContractAddressHelpers {
   listed: ListedItem[]
   /** Find contract address with any key */
   getListedItem: (key?: string) => ListedItem
-  // getSymbol: (key?: string) => string
-  getSymbol: (key: string) => string
   isNativeToken: (key: string) => boolean
   /** Convert structure for chain */
   toAssetInfo: (symbol: string) => AssetInfo | NativeInfo
@@ -34,18 +31,38 @@ export const [useContractsAddress, ContractsAddressProvider] = context
 
 /* state */
 export const useContractsAddressState = (): ContractsAddress | undefined => {
-  const { contract: url } = useNetwork()
-  const [data, setData] = useState<ContractAddressJSON>()
+  const [data, setData] = useState<ContractAddressJSON>({
+    contracts: {},
+    whitelist: {},
+  })
+  // useEffect(() => {
+  //   const load = async () => {
+  //     const response = await fetch(url)
+  //     const json: ContractAddressJSON = await response.json()
+  //     setData(json)
+  //   }
 
-  useEffect(() => {
-    const load = async () => {
-      const response = await fetch(url)
-      const json: ContractAddressJSON = await response.json()
-      setData(json)
-    }
+  //   load()
+  // }, [url])
 
-    load()
-  }, [url])
+  // useEffect(() => {
+  //   loadTokensInfo().then((tokens) => {
+  //     setData(
+  //       tokens.reduce((prev, current) => {
+  //         return {
+  //           ...prev,
+  //           [current.contract_addr]: {
+  //             symbol: current.symbol,
+  //             name: current.name,
+  //             token: "terra100gxsglqfc7uz3uppet5ytl3cp03lmkcqx9njn",
+  //             pair: "terra1djcthczd5nvhqjqdfuzzugyxuq34924kmtcgpm",
+  //             lpToken: "terra1uk8kkm2kjs68ygyyn68kev67n0dmsfq6vspjx6",
+  //           },
+  //         }
+  //       }, {} as ContractAddressJSON)
+  //     )
+  //   })
+  // }, [])
 
   const helpers = ({
     whitelist,
@@ -77,7 +94,7 @@ export const useContractsAddressState = (): ContractsAddress | undefined => {
     const parseAssetInfo = (info: AssetInfo | NativeInfo) =>
       "native_token" in info
         ? info.native_token.denom
-        : getSymbol(info.token.contract_addr)
+        : getSymbol(info.token.contract_addr) || ""
 
     const parseToken = ({ amount, info }: AssetToken | NativeToken) => ({
       amount,
@@ -88,7 +105,6 @@ export const useContractsAddressState = (): ContractsAddress | undefined => {
       listed,
       getListedItem,
       isNativeToken,
-      getSymbol,
       toAssetInfo,
       toToken,
       parseAssetInfo,

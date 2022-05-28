@@ -2,17 +2,19 @@ import { FC, PropsWithChildren } from "react"
 import MESSAGE from "../lang/MESSAGE.json"
 import { lookupSymbol } from "../libs/parse"
 import Icon from "../components/Icon"
-import { Config } from "./useSelectAsset"
 import styles from "./SwapSelectToken.module.scss"
 import { GetTokenSvg } from "../helpers/token"
 import { lpTokenInfos, tokenInfos } from "../rest/usePairs"
 import { Type } from "../pages/Swap"
 
-interface Props extends Config {
+interface Props {
   isOpen: boolean
   asset?: string
   type: string
   onClick: () => void
+  value: string
+  onSelect: (asset: string) => void
+  formatTokenName?: (symbol: string) => string
 }
 
 const SwapSelectToken: FC<PropsWithChildren<Props>> = ({

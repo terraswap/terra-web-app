@@ -1,4 +1,6 @@
+import { NATIVE_TOKENS } from "constants/constants"
 import { is } from "ramda"
+import { tokenInfos } from "rest/usePairs"
 
 /* object */
 export const record = <T, V>(
@@ -28,3 +30,10 @@ export const insertIf = <T>(condition?: any, ...elements: T[]) =>
 export const getLength = (text: string) => new Blob([text]).size
 export const capitalize = (text: string) =>
   text[0].toUpperCase() + text.slice(1)
+
+export const isNativeToken = (key: string) =>
+  NATIVE_TOKENS.indexOf(key) > -1 ? true : false
+
+export const getSymbol = (key: string) => {
+  return tokenInfos.get(key)?.symbol
+}

@@ -1,16 +1,18 @@
 import { useWallet } from "@terra-money/wallet-provider"
 import { FINDER } from "constants/constants"
-import networks from "constants/networks"
+import terraswapNetworks from "constants/networks"
 
 const useNetwork = () => {
-  const { network: extNetwork } = useWallet()
+  const { network } = useWallet()
+  const getFinderUrl = (address: string, path: string = "account") =>
+    `${FINDER}/${network.chainID}/${path}/${address}`
 
-  const network = networks[extNetwork.name]
-
-  const finder = (address: string, path: string = "account") =>
-    `${FINDER}/${extNetwork.chainID}/${path}/${address}`
-
-  return { ...extNetwork, ...network, finder }
+  return {
+    ...network,
+    ...terraswapNetworks[network.name],
+    getFinderUrl,
+    fcd: network.lcd?.replace("lcd", "lcd"),
+  }
 }
 
 export default useNetwork

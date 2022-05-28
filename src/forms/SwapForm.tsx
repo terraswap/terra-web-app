@@ -90,7 +90,7 @@ const Maintenance = styled.div`
   top: 0;
 
   color: #0222ba;
-  z-index: 9999999;
+  z-index: 99;
 
   display: flex;
   justify-content: center;

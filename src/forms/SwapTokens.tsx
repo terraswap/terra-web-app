@@ -9,6 +9,7 @@ import Loading from "components/Loading"
 import { SwapTokenAsset } from "./useSwapSelectToken"
 import { VariableSizeList, ListChildComponentProps } from "react-window"
 import { isNativeToken } from "libs/utils"
+import styled from "styled-components"
 
 const cx = classNames.bind(styles)
 
@@ -21,6 +22,33 @@ interface Props {
   value: string
   formatTokenName?: (symbol: string) => string
 }
+
+const NoPairs = styled.div`
+  width: 100%;
+  height: 100%;
+  position: relative;
+  font-size: 16px;
+  font-weight: bold;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  text-align: center;
+  color: #0222ba;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+
+  & > * {
+    margin-bottom: 20px;
+  }
+
+  & > h1 {
+    font-size: 46px;
+    font-weight: bold;
+  }
+`
 
 const SwapTokens = ({
   selected,
@@ -119,18 +147,31 @@ const SwapTokens = ({
 
       <ul ref={listRef} className={classNames(styles.list)}>
         {assetElements ? (
-          <VariableSizeList
-            height={listHeight}
-            width="100%"
-            itemSize={(index) =>
-              isNativeToken(filteredAssetList?.[index].contract_addr || "")
-                ? 75
-                : 75
-            }
-            itemCount={assetElements.length}
-          >
-            {Row}
-          </VariableSizeList>
+          <>
+            {assetElements?.length ? (
+              <VariableSizeList
+                height={listHeight}
+                width="100%"
+                itemSize={(index) =>
+                  isNativeToken(filteredAssetList?.[index].contract_addr || "")
+                    ? 75
+                    : 75
+                }
+                itemCount={assetElements.length}
+              >
+                {Row}
+              </VariableSizeList>
+            ) : (
+              <NoPairs>
+                <h1>:(</h1>
+                <div>
+                  No available pairs yet.
+                  <br />
+                  We are looking forward to getting the first providing!
+                </div>
+              </NoPairs>
+            )}
+          </>
         ) : (
           <div
             style={{

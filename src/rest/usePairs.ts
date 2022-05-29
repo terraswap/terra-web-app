@@ -64,6 +64,7 @@ export let lpTokenInfos: Map<string, TokenInfo[]> = new Map<
 export let InitLP = ""
 
 const usePairs = () => {
+  const [noPairExists, setNoPairExists] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<Pairs>({ pairs: [] })
   const { loadPairs, loadTokenInfo, loadTokens } = useAPI()
@@ -112,7 +113,8 @@ const usePairs = () => {
     try {
       if (
         isLoading ||
-        (result?.pairs.length > 0 && currentNetworkName === networkName)
+        (result?.pairs.length > 0 && currentNetworkName === networkName) ||
+        noPairExists
       ) {
         return
       }
@@ -174,12 +176,14 @@ const usePairs = () => {
           })
         )
 
-        if (pairs) {
+        if (pairs?.length) {
           setResult({
             pairs: pairs.filter((pair) => !!pair) as Pair[],
           })
-          setIsLoading(false)
+        } else {
+          setNoPairExists(true)
         }
+        setIsLoading(false)
       }
 
       fetchTokensInfo().then(() => fetchPairs())
@@ -194,7 +198,8 @@ const usePairs = () => {
     loadPairs,
     loadTokens,
     networkName,
-    result,
+    noPairExists,
+    result?.pairs.length,
   ])
 
   return { ...result, isLoading, getTokenInfo }

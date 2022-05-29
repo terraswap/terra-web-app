@@ -66,8 +66,7 @@ interface TokenResult {
 }
 
 interface PoolResponse {
-  height: string
-  result: Pool
+  data: Pool
 }
 
 interface Pool {
@@ -178,7 +177,7 @@ const useAPI = () => {
     return result
   }, [service, factory, getURL])
 
-  const loadTokensInfo = useCallback(async (): Promise<TokenResult[]> => {
+  const loadTokens = useCallback(async (): Promise<TokenResult[]> => {
     const url = `${service}/tokens`
     const res: TokenResult[] = (await axios.get(url)).data
     return res
@@ -198,7 +197,7 @@ const useAPI = () => {
     async (contract: string): Promise<TokenResult> => {
       const url = getURL(contract, { token_info: {} })
       const res = (await axios.get(url)).data
-      return res.result
+      return res.data
     },
     [getURL]
   )
@@ -208,7 +207,7 @@ const useAPI = () => {
     async (contract: string) => {
       const url = getURL(contract, { pool: {} })
       const res: PoolResponse = (await axios.get(url)).data
-      return res.result
+      return res.data
     },
     [getURL]
   )
@@ -289,7 +288,7 @@ const useAPI = () => {
     loadContractBalance,
     loadGasPrice,
     loadPairs,
-    loadTokensInfo,
+    loadTokens,
     loadSwappableTokenAddresses,
     loadTokenInfo,
     loadPool,

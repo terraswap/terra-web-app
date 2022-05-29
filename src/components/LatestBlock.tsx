@@ -1,5 +1,5 @@
 import { useNetwork } from "hooks"
-import React from "react"
+
 import { useQuery } from "react-query"
 import useDashboardAPI from "rest/useDashboardAPI"
 import styled from "styled-components"

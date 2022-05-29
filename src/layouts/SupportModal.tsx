@@ -1,4 +1,3 @@
-import React from "react"
 import { CHROME } from "constants/constants"
 import Modal from "components/Modal"
 import Card from "components/Card"

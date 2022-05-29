@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import styled from "styled-components"
 import Container from "components/Container"
 import { SubmitHandler, useForm, WatchObserver } from "react-hook-form"
@@ -281,20 +281,19 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     if (isPairsLoading) {
       return {}
     }
-    const info1 =
-      type === Type.WITHDRAW ? lpTokenInfos.get(from)?.[0] : tokenInfo1
-    const info2 =
-      type === Type.WITHDRAW ? lpTokenInfos.get(from)?.[1] : tokenInfo2
-    const selected = pairs.find((item) => {
+    const lpTokenInfo = lpTokenInfos.get(from)
+
+    const info1 = type === Type.WITHDRAW ? lpTokenInfo?.[0] : tokenInfo1
+    const info2 = type === Type.WITHDRAW ? lpTokenInfo?.[1] : tokenInfo2
+    const selectedPairs = pairs.find((item) => {
       return (
         item.pair.find((s) => s.contract_addr === info1?.contract_addr) &&
         item.pair.find((s) => s.contract_addr === info2?.contract_addr)
       )
     })
 
-    const contract = selected?.contract || ""
-    const lpContract = selected?.liquidity_token || ""
-    const lpTokenInfo = lpTokenInfos.get(lpContract)
+    const contract = selectedPairs?.contract || ""
+    const lpContract = selectedPairs?.liquidity_token || ""
 
     return {
       pairAddress: contract,

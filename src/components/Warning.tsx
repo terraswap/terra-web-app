@@ -1,5 +1,3 @@
-import React from "react"
-
 import Modal from "components/Modal"
 
 import styles from "./Warning.module.scss"

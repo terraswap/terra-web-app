@@ -1,4 +1,4 @@
-import React from "react"
+import { forwardRef } from "react"
 import styled, { css } from "styled-components"
 
 import iconChecked from "images/icon-checked.svg"
@@ -84,7 +84,7 @@ const Wrapper = styled.label<CheckboxProps>`
   }
 `
 
-const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
+const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   ({ children, block, ...props }, forwardedRef) => {
     return (
       <Wrapper block={block}>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import classNames from "classnames/bind"
 import styles from "./SwapFormGroup.module.scss"

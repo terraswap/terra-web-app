@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef } from "react"
 import styled, { css } from "styled-components"
 
 import iconCopy from "images/icon-copy-outline.svg"

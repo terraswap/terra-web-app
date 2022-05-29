@@ -1,4 +1,4 @@
-import React, { FC, PropsWithChildren } from "react"
+import { FC, PropsWithChildren } from "react"
 import Tippy, { TippyProps } from "@tippyjs/react"
 import classNames from "classnames"
 import { isNil } from "ramda"

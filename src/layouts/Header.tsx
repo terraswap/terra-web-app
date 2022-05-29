@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { ReactComponent as Logo } from "../images/TerraswapLogo.svg"
 import Container from "../components/Container"
 import Connect from "./Connect"

@@ -1,4 +1,4 @@
-import React, { memo, useEffect } from "react"
+import { memo, useEffect } from "react"
 import SwapPage from "../components/SwapPage"
 import SwapForm from "../forms/SwapForm"
 import Container from "../components/Container"

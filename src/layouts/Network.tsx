@@ -1,8 +1,6 @@
-import React, { PropsWithChildren, useMemo } from "react"
+import { PropsWithChildren } from "react"
 import { useWallet, WalletStatus } from "@terra-money/wallet-provider"
-import { ApolloProvider, ApolloClient, InMemoryCache } from "@apollo/client"
 import { DefaultOptions } from "@apollo/client"
-import useNetwork from "hooks/useNetwork"
 import Loading from "components/Loading"
 
 export const DefaultApolloClientOptions: DefaultOptions = {

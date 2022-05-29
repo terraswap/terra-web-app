@@ -1,9 +1,7 @@
-import React from "react"
 import { gt } from "../libs/math"
 import { format, lookupSymbol } from "../libs/parse"
 import styles from "./SwapToken.module.scss"
 import { GetTokenSvg } from "../helpers/token"
-import { useContractsAddress } from "hooks/useContractsAddress"
 import { isNativeToken } from "libs/utils"
 
 interface Props extends AssetItem {

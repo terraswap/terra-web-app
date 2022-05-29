@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import routes from "routes"
 import { ThemeProvider } from "styled-components"
 import variables from "styles/_export.module.scss"
-import { useAddress } from "hooks"
 import Header from "./Header"
 import Footer from "./Footer"
 import container from "components/Container"
@@ -41,9 +40,7 @@ const Container = styled(container)`
 `
 
 const App = () => {
-  const address = useAddress()
   const { isLoading: isPairsLoading } = usePairs()
-
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {

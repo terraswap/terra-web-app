@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react"
+import { useRef, useEffect, useState } from "react"
 import { path } from "ramda"
 import { debounce, merge as mergeDeep } from "lodash"
 import ChartJS, {

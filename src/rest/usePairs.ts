@@ -66,7 +66,7 @@ export let InitLP = ""
 const usePairs = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<Pairs>({ pairs: [] })
-  const { loadPairs, loadTokenInfo, loadTokensInfo } = useAPI()
+  const { loadPairs, loadTokenInfo, loadTokens } = useAPI()
   const { name: networkName } = useNetwork()
   const [currentNetworkName, setCurrentNetworkName] = useState("")
 
@@ -121,7 +121,7 @@ const usePairs = () => {
 
       const fetchTokensInfo = async () => {
         try {
-          const res = await loadTokensInfo()
+          const res = await loadTokens()
           res.forEach((tokenInfo: TokenResult) => {
             tokenInfos.set(tokenInfo.contract_addr, tokenInfo)
           })
@@ -192,7 +192,7 @@ const usePairs = () => {
     getTokenInfo,
     isLoading,
     loadPairs,
-    loadTokensInfo,
+    loadTokens,
     networkName,
     result,
   ])

@@ -1,4 +1,3 @@
-import React from "react"
 import styles from "./SwapConfirm.module.scss"
 
 const SwapConfirm = ({ list }: { list: Content[] }) => (

@@ -1,4 +1,3 @@
-import React from "react"
 import MESSAGE from "../lang/MESSAGE.json"
 import Icon from "../components/Icon"
 import Connected from "./Connected"

@@ -1,4 +1,4 @@
-import React, { FC, PropsWithChildren } from "react"
+import { FC, Fragment, PropsWithChildren } from "react"
 import { Link, useLocation } from "react-router-dom"
 import classNames from "classnames"
 import Card from "./Card"
@@ -79,7 +79,7 @@ const TabView: FC<PropsWithChildren<TabViewProps>> = ({
           )}
         >
           {side?.map((item, index) => (
-            <React.Fragment key={index}>
+            <Fragment key={index}>
               <div
                 className={classNames(
                   ...[
@@ -106,7 +106,7 @@ const TabView: FC<PropsWithChildren<TabViewProps>> = ({
                   <Card shadow={shadow}>{item.visible && item.component}</Card>
                 </Modal>
               )}
-            </React.Fragment>
+            </Fragment>
           ))}
         </div>
       )}

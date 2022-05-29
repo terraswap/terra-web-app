@@ -1,5 +1,5 @@
 import { GetTokenSvg } from "helpers/token"
-import React, { CSSProperties, useEffect, useState } from "react"
+import { CSSProperties, useEffect, useState } from "react"
 import { tokenInfos } from "rest/usePairs"
 import styled from "styled-components"
 

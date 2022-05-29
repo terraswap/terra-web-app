@@ -1,5 +1,5 @@
 import { ConnectType, useWallet } from "@terra-money/wallet-provider"
-import React from "react"
+
 import { ReactNode } from "react"
 import styles from "./ConnectList.module.scss"
 import { useConnectModal } from "hooks"

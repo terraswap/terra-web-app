@@ -16,6 +16,8 @@ interface TerraswapNetwork {
   stats: string
 }
 
+export const AVAILABLE_CHAIN_ID_LIST = ["phoenix-1", "pisco-1"]
+
 const terraswapNetworks: Record<string, TerraswapNetwork> = {
   mainnet: {
     factory: "terra1466nf3zuxpya8q9emxukd7vftaf6h4psr0a07srl5zw74zh84yjqxl5qul",

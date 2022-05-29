@@ -15,10 +15,8 @@ interface DenomInfo {
   denom: string
   amount: string
 }
-
-interface ContractBalanceResponse {
-  height: string
-  result: ContractBalance
+interface LcdContractBalanceResponse {
+  data: ContractBalance
 }
 
 interface ContractBalance {
@@ -122,8 +120,8 @@ const useAPI = () => {
   const loadContractBalance = useCallback(
     async (localContractAddr: string) => {
       const url = getURL(localContractAddr, { balance: { address: address } })
-      const res: ContractBalanceResponse = (await axios.get(url)).data
-      return res.result
+      const res: LcdContractBalanceResponse = (await axios.get(url)).data
+      return res.data
     },
     [address, getURL]
   )

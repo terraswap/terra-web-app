@@ -1809,10 +1809,10 @@
   resolved "https://registry.yarnpkg.com/@terra-money/log-finder/-/log-finder-1.1.6.tgz#501226bc92446dd2514b5d0e08cb24c795450501"
   integrity sha512-QYmkhlCu14foyy2szZfDjQnncoXvIUHMUsrxdW7Fcq1UOM7ecmeQC35eX5JXeX3tRiPVjFaukbNoIwFYFGTJWg==
 
-"@terra-money/react-base-components@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@terra-money/react-base-components/-/react-base-components-2.0.0.tgz#073890e4ad795dc66ff48ef7c134db5c4410b6e1"
-  integrity sha512-WDUd9zgP6L6rMQ4AlLrt6RYp59MV9yctqjPZKeWb5S3URQkL06a5LIpwP4j79TrxJfotMhmCBKFXQ8zVU75YKA==
+"@terra-money/react-base-components@^2.1.2":
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/@terra-money/react-base-components/-/react-base-components-2.1.2.tgz#aceb364abbaa015c0c5a450ff1b198503520d2a3"
+  integrity sha512-ulv1lz1QrTjrqocYRLhBDF56SAa/S7pVOQnA11MsS5VG3xoqweLpHAEpYuOQHN8idrVuWuDBFe4Wl0onAO8wOg==
   dependencies:
     terra-utils "^1.1.2"
 

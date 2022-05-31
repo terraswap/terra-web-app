@@ -20,8 +20,11 @@ const TxInfo = ({ txInfo, parserKey }: Props) => {
     contents.push([
       {
         title: "Fee",
-        content: tx.value.fee.amount.map((value) => {
-          return formatAsset(value.amount, tokenInfos.get(value.denom)?.symbol)
+        content: tx.auth_info.fee.amount.map((coin) => {
+          return formatAsset(
+            String(coin.amount),
+            tokenInfos.get(coin.denom)?.symbol
+          )
         }),
       },
     ])

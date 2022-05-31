@@ -34,12 +34,6 @@ interface SwapTax {
 }
 
 interface SwapTxInfo extends TxInfo {
-  tx: {
-    value: {
-      fee: { amount: FeeAmount[] }
-      memo: string
-    }
-  }
   logs: SwapTxLog[]
 }
 interface SwapTxInfos {

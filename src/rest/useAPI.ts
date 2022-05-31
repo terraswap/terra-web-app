@@ -7,8 +7,8 @@ import { Type } from "pages/Swap"
 import { Msg } from "@terra-money/terra.js"
 import { AxiosError } from "axios"
 interface DenomBalanceResponse {
-  height: string
-  result: DenomInfo[]
+  pagination: { next_key: string | null; total: string }
+  balances: DenomInfo[]
 }
 
 interface DenomInfo {
@@ -105,24 +105,28 @@ export function isNativeInfo(object: any): object is NativeInfo {
 }
 
 const useAPI = () => {
-  const { fcd, factory, service } = useNetwork()
+  const { lcd, fcd, factory, service } = useNetwork()
   const address = useAddress()
   const getURL = useURL()
 
   // useBalance
   const loadDenomBalance = useCallback(async () => {
-    const url = `${fcd}/bank/balances/${address}`
+    const url = `${lcd}/cosmos/bank/v1beta1/balances/${address}`
     const res: DenomBalanceResponse = (await axios.get(url)).data
-    return res.result
-  }, [address, fcd])
+    return res.balances
+  }, [address, lcd])
 
   const loadContractBalance = useCallback(
     async (localContractAddr: string) => {
-      const url = getURL(localContractAddr, { balance: { address: address } })
+      const url = getURL(
+        localContractAddr,
+        { balance: { address: address } },
+        lcd
+      )
       const res: LcdContractBalanceResponse = (await axios.get(url)).data
       return res.data
     },
-    [address, getURL]
+    [address, getURL, lcd]
   )
 
   // useGasPrice
@@ -217,7 +221,7 @@ const useAPI = () => {
     async (variables: { contract: string; msg: any }) => {
       try {
         const { contract, msg } = variables
-        const url = getURL(contract, msg)
+        const url = getURL(contract, msg, lcd)
         const res: SimulatedResponse = (await axios.get(url)).data
         return res
       } catch (error) {
@@ -225,7 +229,7 @@ const useAPI = () => {
         return response?.data
       }
     },
-    [getURL]
+    [getURL, lcd]
   )
 
   const generateContractMessages = useCallback(

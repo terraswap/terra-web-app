@@ -12,12 +12,12 @@ const toQueryMsg = (msg: string) => {
 export default () => {
   const { fcd } = useNetwork()
   const getUrl = useCallback(
-    (contract: string, msg: string | object) => {
+    (contract: string, msg: string | object, baseUrl?: string) => {
       const query_msg =
         typeof msg === "string" ? toQueryMsg(msg) : JSON.stringify(msg)
-      return `${fcd}/cosmwasm/wasm/v1/contract/${contract}/smart/${window.btoa(
-        query_msg
-      )}`
+      return `${
+        baseUrl || fcd
+      }/cosmwasm/wasm/v1/contract/${contract}/smart/${window.btoa(query_msg)}`
     },
     [fcd]
   )

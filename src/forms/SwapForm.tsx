@@ -865,10 +865,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
                 })
               : "0",
             token: from,
-            beliefPrice: `${decimal(
-                div(value1, value2),
-                18
-            )}`,
+            beliefPrice: `${decimal(div(value1, value2), 18)}`,
           })
         } else {
           msgs = await generateContractMessages(
@@ -903,16 +900,11 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
           }`,
         }
 
-        console.log("txOptions")
-        console.log(txOptions)
-
         const signMsg = await terra.tx.create(
           [{ address: walletAddress }],
           txOptions
         )
 
-        console.log("signMsg")
-        console.log(signMsg)
         txOptions.fee = signMsg.auth_info.fee
 
         const extensionResult = await terraExtensionPost(txOptions)
@@ -937,7 +929,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
       to,
       slippageTolerance,
       tokenInfo1,
-      tokenInfo2,
       getMsgs,
       profitableQuery,
       lpContract,

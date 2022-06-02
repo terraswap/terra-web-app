@@ -105,7 +105,7 @@ export function isNativeInfo(object: any): object is NativeInfo {
 }
 
 const useAPI = () => {
-  const { lcd, fcd, factory, service } = useNetwork()
+  const { lcd, factory, service } = useNetwork()
   const address = useAddress()
   const getURL = useURL()
 
@@ -276,17 +276,6 @@ const useAPI = () => {
     [service]
   )
 
-  // useTax
-  // deprecated
-  const loadTaxInfo = useCallback(async (contract_addr?: string) => {
-    return ""
-  }, [])
-
-  const loadTaxRate = useCallback(async () => {
-    // deprecated
-    return "0.000000000000000000"
-  }, [])
-
   return {
     loadDenomBalance,
     loadContractBalance,
@@ -298,8 +287,6 @@ const useAPI = () => {
     loadPool,
     querySimulate,
     generateContractMessages,
-    loadTaxInfo,
-    loadTaxRate,
   }
 }
 

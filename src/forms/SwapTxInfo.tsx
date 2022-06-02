@@ -82,8 +82,7 @@ const TxInfo = ({ txInfo, parserKey }: Props) => {
             const commission = fromContract.find(
               ({ key }) => key === "commission_amount"
             )
-            const tax = fromContract.find(({ key }) => key === "tax_amount")
-
+            
             if (offerAsset && offerAmount) {
               let value = formatAsset(
                 offerAmount.value,
@@ -93,11 +92,8 @@ const TxInfo = ({ txInfo, parserKey }: Props) => {
             }
             if (askAsset && returnAmount) {
               const symbol = tokenInfos.get(askAsset.value)?.symbol
-              let taxAmount = BigInt(0)
-              if (tax) {
-                taxAmount = BigInt(tax.value)
-              }
-              const toAmount = BigInt(returnAmount.value) - taxAmount
+              
+              const toAmount = BigInt(returnAmount.value)
               let value = formatAsset(toAmount.toString(), symbol)
               reconstructed.push({ key: "To", value: value })
 
@@ -111,12 +107,6 @@ const TxInfo = ({ txInfo, parserKey }: Props) => {
                 reconstructed.push({
                   key: "* Commission",
                   value: formatAsset(commission.value, symbol),
-                })
-              }
-              if (tax) {
-                reconstructed.push({
-                  key: "* Tax",
-                  value: formatAsset(tax.value, symbol),
                 })
               }
             }

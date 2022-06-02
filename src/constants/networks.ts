@@ -26,7 +26,7 @@ const terraswapNetworks: Record<string, TerraswapNetwork> = {
     dashboard: process.env.REACT_APP_MAINNET_DASHBOARD_URL,
     router: "terra13ehuhysn5mqjeaheeuew2gjs785f6k7jm8vfsqg3jhtpkwppcmzqcu7chk",
     fee: { gasPrice: "0.15", amount: "1518", gas: "2000000" },
-    stats: "https://fcd.terra.dev/",
+    stats: "https://phoenix-fcd.terra.dev/",
   },
   testnet: {
     factory: "terra1jha5avc92uerwp9qzx3flvwnyxs3zax2rrm6jkcedy2qvzwd2k7qk7yxcl",

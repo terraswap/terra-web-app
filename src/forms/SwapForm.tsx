@@ -825,8 +825,8 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
   ])
   useEffect(() => {
     setValue(Key.gasPrice, gasPrice || "")
-    setValue(Key.feeValue, gasPrice ? ceil(times(fee.gas, gasPrice)) : "")
-  }, [fee.gas, gasPrice, setValue])
+    setValue(Key.feeValue, gasPrice ? ceil(times(fee?.gas, gasPrice)) : "")
+  }, [fee?.gas, gasPrice, setValue])
 
   useEffect(() => {
     setValue(Key.feeValue, ceil(times(fee?.gas, gasPrice)) || "")
@@ -866,8 +866,8 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
               : "0",
             token: from,
             beliefPrice: `${decimal(
-              div(value1, value2),
-              18
+                div(value1, value2),
+                18
             )}`,
           })
         } else {

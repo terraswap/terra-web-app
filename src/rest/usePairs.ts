@@ -120,6 +120,7 @@ const usePairs = () => {
       }
       setIsLoading(true)
       setCurrentNetworkName(networkName)
+      setResult({ pairs: [] })
 
       const fetchTokensInfo = async () => {
         try {

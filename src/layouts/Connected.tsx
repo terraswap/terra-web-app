@@ -13,27 +13,17 @@ interface Props {
 
 const Connected = ({ className, icon }: Props) => {
   const ref = useRef(null)
-  // const [isOpen, setIsOpen] = useState(false);
-  // const close = () => setIsOpen(false);
-  // const toggle = () => setIsOpen((current) => !current);
-
   const { name } = useNetwork()
 
-  /* close wallet on click outside */
   const { disconnect } = useWallet()
   const address = useAddress()
-  // useOnClickOutside(ref, close);
-  // useEffect(() => {
-  //   close();
-  // }, [address]);
-
   const convertName = name[0].toUpperCase() + name.slice(1, name.length)
 
   return (
     <div className={styles.wrapper} ref={ref}>
       <button
         className={classNames(styles.connected, className)}
-        onClick={disconnect}
+        onClick={() => disconnect()}
       >
         {icon}
         <span className={styles.address}>

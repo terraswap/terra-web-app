@@ -2,7 +2,7 @@ import { FC, useEffect, useMemo, useRef, useState } from "react"
 import classNames from "classnames/bind"
 import SwapToken from "./SwapToken"
 import styles from "./SwapTokens.module.scss"
-import { lpTokenInfos } from "../rest/usePairs"
+import usePairs, { lpTokenInfos } from "../rest/usePairs"
 import { Type } from "../pages/Swap"
 import { tokenInfos } from "../rest/usePairs"
 import Loading from "components/Loading"
@@ -58,6 +58,7 @@ const SwapTokens = ({
   formatTokenName,
 }: Props) => {
   const listRef = useRef<HTMLUListElement>(null)
+  const { isLoading: isPairsLoading } = usePairs()
 
   /* search */
   const [searchKeyword, setSearchKeyword] = useState("")
@@ -146,7 +147,7 @@ const SwapTokens = ({
       </section>
 
       <ul ref={listRef} className={classNames(styles.list)}>
-        {assetElements ? (
+        {assetElements && !isPairsLoading ? (
           <>
             {assetElements?.length ? (
               <VariableSizeList
@@ -181,7 +182,7 @@ const SwapTokens = ({
               left: 0,
             }}
           >
-            <Loading />
+            <Loading color="#0222ba" />
           </div>
         )}
       </ul>

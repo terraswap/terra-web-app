@@ -11,13 +11,13 @@ const container = document.getElementById("terraswap")
 const root = createRoot(container!)
 root.render(
   <StrictMode>
-    <WalletConnectProvider>
-      <Network>
-        <Router>
+    <Router>
+      <WalletConnectProvider>
+        <Network>
           <ScrollToTop />
           <App />
-        </Router>
-      </Network>
-    </WalletConnectProvider>
+        </Network>
+      </WalletConnectProvider>
+    </Router>
   </StrictMode>
 )

@@ -9,7 +9,7 @@ import Loading from "components/Loading"
 import { SwapTokenAsset } from "./useSwapSelectToken"
 import { VariableSizeList, ListChildComponentProps } from "react-window"
 import { isNativeToken } from "libs/utils"
-import styled from "styled-components"
+import styled, { css } from "styled-components"
 
 const cx = classNames.bind(styles)
 
@@ -50,6 +50,48 @@ const NoPairs = styled.div`
   }
 `
 
+const ToggleWrapper = styled.div`
+  width: 100%;
+  height: auto;
+  position: relative;
+  padding: 3px 6px 3px 3px;
+  border-radius: 14.5px;
+  background-color: #e2e7ff;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`
+
+const ToggleItem = styled.button<{ selected?: boolean }>`
+  flex: 1;
+  width: 100%;
+  height: auto;
+  padding: 3px;
+  border-radius: 11.5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  text-align: center;
+  color: #4460e6;
+  line-height: 17px;
+
+  ${({ selected }) =>
+    selected &&
+    css`
+      background-color: #0222ba;
+      color: #ffffff;
+    `}
+`
+
+ToggleItem.defaultProps = {
+  type: "button",
+}
+
 const SwapTokens = ({
   selected,
   onSelect: handleSelect,
@@ -64,18 +106,40 @@ const SwapTokens = ({
   const [searchKeyword, setSearchKeyword] = useState("")
   const [listHeight, setListHeight] = useState(250)
 
+  const [verified, setVerified] = useState(true)
+
   const filteredAssetList = useMemo(
     () =>
       assetList?.filter(({ contract_addr: contractAddr }) => {
         let symbol = ""
         if (type === Type.WITHDRAW) {
           const tokenInfoList = lpTokenInfos.get(contractAddr)
+
+          if (
+            (!tokenInfoList?.[0].verified || !tokenInfoList?.[1].verified) &&
+            verified
+          ) {
+            return false
+          }
+
+          if (
+            tokenInfoList?.[0].verified &&
+            tokenInfoList?.[1].verified &&
+            !verified
+          ) {
+            return false
+          }
+
           symbol = tokenInfoList
             ? tokenInfoList[0].symbol + "-" + tokenInfoList[1].symbol
             : ""
         } else {
           const tokenInfo = tokenInfos.get(contractAddr)
           symbol = tokenInfo ? tokenInfo.symbol : ""
+
+          if (tokenInfo?.verified !== verified) {
+            return false
+          }
         }
 
         return (
@@ -83,7 +147,7 @@ const SwapTokens = ({
           contractAddr.toLowerCase().indexOf(searchKeyword.toLowerCase()) >= 0
         )
       }),
-    [assetList, searchKeyword, type]
+    [assetList, searchKeyword, type, verified]
   )
   const assetElements = useMemo(() => {
     return filteredAssetList?.map((asset) => {
@@ -131,11 +195,11 @@ const SwapTokens = ({
     return () => {
       window.removeEventListener("resize", handleWindowResize)
     }
-  }, [])
+  }, [filteredAssetList])
 
   return (
     <div className={styles.component}>
-      <section className={styles.search}>
+      <section className={styles.search} style={{ marginBottom: 20 }}>
         <input
           id="search"
           name="search"
@@ -145,6 +209,24 @@ const SwapTokens = ({
           placeholder="Search name or address"
         />
       </section>
+
+      <div
+        style={{
+          marginBottom: 20,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ToggleWrapper style={{ maxWidth: 178 }}>
+          <ToggleItem selected={verified} onClick={() => setVerified(true)}>
+            verified
+          </ToggleItem>
+          <ToggleItem selected={!verified} onClick={() => setVerified(false)}>
+            unverified
+          </ToggleItem>
+        </ToggleWrapper>
+      </div>
 
       <ul ref={listRef} className={classNames(styles.list)}>
         {assetElements && !isPairsLoading ? (

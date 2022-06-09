@@ -91,9 +91,8 @@ export const validate = {
     const amount = symbol ? toAmount(value, symbol) : value
 
     if (
-      maxFee === "" ||
-      maxFee === undefined ||
-      feeValue === undefined ||
+      feeValue !== undefined &&
+      maxFee !== undefined &&
       gt(feeValue, maxFee)
     ) {
       return `You don't have enough balance to pay for ${formatAsset(

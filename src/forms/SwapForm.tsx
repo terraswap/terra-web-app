@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import styled from "styled-components"
 import Container from "components/Container"
-import { SubmitHandler, useForm, WatchObserver } from "react-hook-form"
+import { useForm, WatchObserver } from "react-hook-form"
 import Result from "./Result"
 import TabView from "components/TabView"
 import { useSearchParams } from "react-router-dom"
 import { DEFAULT_MAX_SPREAD, LUNA, ULUNA } from "constants/constants"
-import { useNetwork, useAddress, useConnectModal } from "hooks"
+import { useAddress, useConnectModal } from "hooks"
 import {
   lookup,
   decimal,
@@ -21,7 +21,7 @@ import useSwapSelectToken from "./useSwapSelectToken"
 import SwapFormGroup from "./SwapFormGroup"
 import usePairs, { InitLP, useLpTokenInfos, useTokenInfos } from "rest/usePairs"
 import useBalance from "rest/useBalance"
-import { minus, gte, times, ceil, div } from "libs/math"
+import { minus, gte, div } from "libs/math"
 import { TooltipIcon } from "components/Tooltip"
 import Tooltip from "lang/Tooltip.json"
 import useGasPrice from "rest/useGasPrice"
@@ -36,7 +36,7 @@ import Button from "components/Button"
 import MESSAGE from "lang/MESSAGE.json"
 import SwapConfirm from "./SwapConfirm"
 import useAPI from "rest/useAPI"
-import { TxResult, useLCDClient, useWallet } from "@terra-money/wallet-provider"
+import { TxResult, useWallet } from "@terra-money/wallet-provider"
 import iconSettings from "images/icon-settings.svg"
 import iconReload from "images/icon-reload.svg"
 import { useModal } from "components/Modal"
@@ -45,6 +45,8 @@ import useLocalStorage from "libs/useLocalStorage"
 import useAutoRouter from "rest/useAutoRouter"
 import WarningModal from "components/Warning"
 import Disclaimer from "components/DisclaimerAgreement"
+import useFee from "hooks/useFee"
+import useFormData from "hooks/forms/useFormData"
 
 enum Key {
   value1 = "value1",
@@ -59,6 +61,23 @@ enum Key {
   maxFee = "maxFee",
   gasPrice = "gasPrice",
   poolLoading = "poolLoading",
+}
+
+type FormData = Record<Key, string>
+
+const defaultFormValues = {
+  [Key.value1]: "",
+  [Key.value2]: "",
+  [Key.feeValue]: "",
+  [Key.feeSymbol]: LUNA,
+  [Key.load]: "",
+  [Key.symbol1]: "",
+  [Key.symbol2]: "",
+  [Key.max1]: "",
+  [Key.max2]: "",
+  [Key.maxFee]: "",
+  [Key.gasPrice]: "",
+  [Key.poolLoading]: "",
 }
 
 const priceKey = PriceKey.PAIR
@@ -87,10 +106,8 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
   const lpTokenInfos = useLpTokenInfos()
 
   const { generateContractMessages } = useAPI()
-  const { fee } = useNetwork()
   const walletAddress = useAddress()
   const { post: terraExtensionPost } = useWallet()
-  const terra = useLCDClient()
   const settingsModal = useModal()
   const [slippageSettings, setSlippageSettings] =
     useLocalStorage<SettingValues>("slippage", {
@@ -115,21 +132,8 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     [Type.WITHDRAW]: BalanceKey.LPSTAKABLE,
   }[type]
 
-  const form = useForm({
-    defaultValues: {
-      [Key.value1]: "",
-      [Key.value2]: "",
-      [Key.feeValue]: "",
-      [Key.feeSymbol]: LUNA,
-      [Key.load]: "",
-      [Key.symbol1]: "",
-      [Key.symbol2]: "",
-      [Key.max1]: "",
-      [Key.max2]: "",
-      [Key.maxFee]: "",
-      [Key.gasPrice]: "",
-      [Key.poolLoading]: "",
-    },
+  const form = useForm<FormData>({
+    defaultValues: defaultFormValues,
     mode: "all",
     reValidateMode: "onChange",
   })
@@ -143,7 +147,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     resetField,
   } = form
   const [isReversed, setIsReversed] = useState(false)
-  const formData = watch()
+  const formData = useFormData(watch, defaultFormValues)
 
   useEffect(() => {
     if (!from && !to) {
@@ -339,134 +343,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     }
   }, [isWarningModalConfirmed, spread, warningModal])
 
-  const simulationContents = useMemo(() => {
-    if (
-      !(
-        Number(formData[Key.value1]) &&
-        formData[Key.symbol1] &&
-        (type === Type.WITHDRAW
-          ? formData[Key.value2]
-          : Number(formData[Key.value2])) &&
-        (type !== Type.WITHDRAW ? formData[Key.symbol2] : true)
-      )
-    ) {
-      return []
-    }
-    const minimumReceived = profitableQuery
-      ? calc.minimumReceived({
-          expectedAmount: `${profitableQuery?.simulatedAmount}`,
-          max_spread: String(slippageTolerance),
-          commission: "0",
-          decimals: tokenInfo1?.decimals,
-        })
-      : "0"
-
-    return [
-      ...insertIf(type === Type.SWAP, {
-        title: <TooltipIcon content={Tooltip.Swap.Rate}>Rate</TooltipIcon>,
-        content: `${decimal(profitableQuery?.price, tokenInfo1?.decimals)} ${
-          formData[Key.symbol1]
-        } per ${formData[Key.symbol2]}`,
-      }),
-      ...insertIf(type !== Type.SWAP, {
-        title: `${formData[Key.symbol1]} price`,
-        content: `${poolResult && decimal(poolResult.price1, 6)} ${
-          formData[Key.symbol1]
-        } per LP`,
-      }),
-      ...insertIf(type !== Type.SWAP, {
-        title: `${formData[Key.symbol2]} price`,
-        content: `${poolResult && decimal(poolResult.price2, 6)} ${
-          formData[Key.symbol2]
-        } per LP`,
-      }),
-      ...insertIf(type === Type.SWAP, {
-        title: (
-          <TooltipIcon content={Tooltip.Swap.MinimumReceived}>
-            Minimum Received
-          </TooltipIcon>
-        ),
-        content: (
-          <Count symbol={formData[Key.symbol2]}>{minimumReceived}</Count>
-        ),
-      }),
-      ...insertIf(type === Type.PROVIDE, {
-        title: (
-          <TooltipIcon content={Tooltip.Pool.LPfromTx}>LP from Tx</TooltipIcon>
-        ),
-        content: `${lookup(poolResult?.LP, lpContract)} LP`,
-      }),
-      ...insertIf(type === Type.WITHDRAW, {
-        title: "LP after Tx",
-        content: `${lookup(poolResult?.LP, lpContract)} LP`,
-      }),
-      ...insertIf(type !== Type.SWAP, {
-        title: (
-          <TooltipIcon content={Tooltip.Pool.PoolShare}>
-            Pool Share after Tx
-          </TooltipIcon>
-        ),
-        content: (
-          <Count format={(value) => `${percent(value)}`}>
-            {poolResult?.afterPool}
-          </Count>
-        ),
-      }),
-      {
-        title: <TooltipIcon content={Tooltip.Swap.TxFee}>Tx Fee</TooltipIcon>,
-        content: (
-          <Count symbol={formData[Key.feeSymbol]}>
-            {lookup(formData[Key.feeValue])}
-          </Count>
-        ),
-      },
-      ...insertIf(type === Type.SWAP && spread !== "", {
-        title: <TooltipIcon content={Tooltip.Swap.Spread}>Spread</TooltipIcon>,
-        content: (
-          <div style={gte(spread, "0.01") ? Warning : undefined}>
-            <Count
-              format={(value) =>
-                `${
-                  (gte(spread, "0.01") ? "Low liquidity " : "") + percent(value)
-                }`
-              }
-            >
-              {spread}
-            </Count>
-          </div>
-        ),
-      }),
-      ...insertIf(type === Type.SWAP && profitableQuery?.tokenRoutes?.length, {
-        title: (
-          <TooltipIcon content="Optimized route for your optimal gain">
-            Route
-          </TooltipIcon>
-        ),
-        content: (
-          <span
-            title={profitableQuery?.tokenRoutes
-              ?.map((token) => tokenInfos.get(token)?.symbol)
-              .join(" → ")}
-          >
-            {profitableQuery?.tokenRoutes
-              ?.map((token) => tokenInfos.get(token)?.symbol)
-              .join(" → ")}
-          </span>
-        ),
-      }),
-    ]
-  }, [
-    formData,
-    type,
-    profitableQuery,
-    slippageTolerance,
-    tokenInfo1?.decimals,
-    poolResult,
-    lpContract,
-    spread,
-    tokenInfos,
-  ])
-
   const getMsgs = useCallback(
     (
       _msg: any,
@@ -525,6 +401,237 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
   )
 
   const { gasPrice } = useGasPrice(formData[Key.feeSymbol])
+
+  const [createTxOptions, setCreateTxOptions] = useState<
+    CreateTxOptions | undefined
+  >(undefined)
+
+  useEffect(() => {
+    let isAborted = false
+
+    const generateCreateTxOptions = async () => {
+      try {
+        const { value1, value2, feeSymbol } = formData
+        let msgs: any = {}
+        if (type === Type.SWAP) {
+          if (!profitableQuery?.msg) {
+            return
+          }
+          msgs = getMsgs(profitableQuery?.msg, {
+            amount: `${value1}`,
+            minimumReceived: profitableQuery
+              ? calc.minimumReceived({
+                  expectedAmount: `${profitableQuery?.simulatedAmount}`,
+                  max_spread: String(slippageTolerance),
+                  commission: "0",
+                  decimals: tokenInfo1?.decimals,
+                })
+              : "0",
+            token: from,
+            beliefPrice: `${decimal(div(value1, value2), 18)}`,
+          })
+        } else {
+          msgs = await generateContractMessages(
+            {
+              [Type.PROVIDE]: {
+                type: Type.PROVIDE,
+                sender: `${walletAddress}`,
+                fromAmount: `${value1}`,
+                toAmount: `${value2}`,
+                from: `${from}`,
+                to: `${to}`,
+                slippage: slippageTolerance,
+              },
+              [Type.WITHDRAW]: {
+                type: Type.WITHDRAW,
+                sender: `${walletAddress}`,
+                amount: `${value1}`,
+                lpAddr: `${lpContract}`,
+              },
+            }[type] as any
+          )
+          if (isAborted) {
+            return
+          }
+          msgs = msgs.map((msg: any) => {
+            return Array.isArray(msg) ? msg[0] : msg
+          })
+        }
+
+        const txOptions: CreateTxOptions = {
+          msgs,
+          memo: undefined,
+          gasPrices: `${gasPrice}${
+            findTokenInfoBySymbolOrContractAddr(feeSymbol)?.contract_addr
+          }`,
+        }
+
+        setCreateTxOptions(txOptions)
+      } catch (error) {
+        console.log(error)
+        setCreateTxOptions(undefined)
+      }
+    }
+
+    generateCreateTxOptions()
+
+    return () => {
+      isAborted = true
+    }
+  }, [
+    formData,
+    from,
+    gasPrice,
+    generateContractMessages,
+    getMsgs,
+    lpContract,
+    profitableQuery,
+    slippageTolerance,
+    to,
+    tokenInfo1,
+    type,
+    walletAddress,
+  ])
+
+  const { fee, isCalculating: isFeeCalculating } = useFee(createTxOptions)
+
+  const simulationContents = useMemo(() => {
+    if (
+      !(
+        Number(formData[Key.value1]) &&
+        formData[Key.symbol1] &&
+        (type === Type.WITHDRAW
+          ? formData[Key.value2]
+          : Number(formData[Key.value2])) &&
+        (type !== Type.WITHDRAW ? formData[Key.symbol2] : true)
+      )
+    ) {
+      return []
+    }
+    const minimumReceived = profitableQuery
+      ? calc.minimumReceived({
+          expectedAmount: `${profitableQuery?.simulatedAmount}`,
+          max_spread: String(slippageTolerance),
+          commission: "0",
+          decimals: tokenInfo1?.decimals,
+        })
+      : "0"
+
+    const feeToken = tokenInfos.get(formData[Key.feeSymbol])
+
+    return [
+      ...insertIf(type === Type.SWAP, {
+        title: <TooltipIcon content={Tooltip.Swap.Rate}>Rate</TooltipIcon>,
+        content: `${decimal(profitableQuery?.price, tokenInfo1?.decimals)} ${
+          formData[Key.symbol1]
+        } per ${formData[Key.symbol2]}`,
+      }),
+      ...insertIf(type !== Type.SWAP, {
+        title: `${formData[Key.symbol1]} price`,
+        content: `${poolResult && decimal(poolResult.price1, 6)} ${
+          formData[Key.symbol1]
+        } per LP`,
+      }),
+      ...insertIf(type !== Type.SWAP, {
+        title: `${formData[Key.symbol2]} price`,
+        content: `${poolResult && decimal(poolResult.price2, 6)} ${
+          formData[Key.symbol2]
+        } per LP`,
+      }),
+      ...insertIf(type === Type.SWAP, {
+        title: (
+          <TooltipIcon content={Tooltip.Swap.MinimumReceived}>
+            Minimum Received
+          </TooltipIcon>
+        ),
+        content: (
+          <Count symbol={formData[Key.symbol2]}>{minimumReceived}</Count>
+        ),
+      }),
+      ...insertIf(type === Type.PROVIDE, {
+        title: (
+          <TooltipIcon content={Tooltip.Pool.LPfromTx}>LP from Tx</TooltipIcon>
+        ),
+        content: `${lookup(poolResult?.LP, lpContract)} LP`,
+      }),
+      ...insertIf(type === Type.WITHDRAW, {
+        title: "LP after Tx",
+        content: `${lookup(poolResult?.LP, lpContract)} LP`,
+      }),
+      ...insertIf(type !== Type.SWAP, {
+        title: (
+          <TooltipIcon content={Tooltip.Pool.PoolShare}>
+            Pool Share after Tx
+          </TooltipIcon>
+        ),
+        content: (
+          <Count format={(value) => `${percent(value)}`}>
+            {poolResult?.afterPool}
+          </Count>
+        ),
+      }),
+      ...insertIf(walletAddress && formState?.isValid, {
+        title: <TooltipIcon content={Tooltip.Swap.TxFee}>Tx Fee</TooltipIcon>,
+        content: isFeeCalculating ? (
+          "Calculating..."
+        ) : (
+          <Count symbol={formData[Key.feeSymbol]}>
+            {feeToken
+              ? `${fee?.amount?.get(feeToken?.contract_addr)?.amount.toDP()}`
+              : "-"}
+          </Count>
+        ),
+      }),
+      ...insertIf(type === Type.SWAP && spread !== "", {
+        title: <TooltipIcon content={Tooltip.Swap.Spread}>Spread</TooltipIcon>,
+        content: (
+          <div style={gte(spread, "0.01") ? Warning : undefined}>
+            <Count
+              format={(value) =>
+                `${
+                  (gte(spread, "0.01") ? "Low liquidity " : "") + percent(value)
+                }`
+              }
+            >
+              {spread}
+            </Count>
+          </div>
+        ),
+      }),
+      ...insertIf(type === Type.SWAP && profitableQuery?.tokenRoutes?.length, {
+        title: (
+          <TooltipIcon content="Optimized route for your optimal gain">
+            Route
+          </TooltipIcon>
+        ),
+        content: (
+          <span
+            title={profitableQuery?.tokenRoutes
+              ?.map((token) => tokenInfos.get(token)?.symbol)
+              .join(" → ")}
+          >
+            {profitableQuery?.tokenRoutes
+              ?.map((token) => tokenInfos.get(token)?.symbol)
+              .join(" → ")}
+          </span>
+        ),
+      }),
+    ]
+  }, [
+    formData,
+    type,
+    profitableQuery,
+    slippageTolerance,
+    tokenInfo1,
+    tokenInfos,
+    poolResult,
+    lpContract,
+    walletAddress,
+    formState,
+    isFeeCalculating,
+    fee,
+    spread,
+  ])
 
   const validateForm = async (
     key: Key.value1 | Key.value2 | Key.feeValue | Key.feeSymbol | Key.load,
@@ -714,14 +821,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     trigger,
     profitableQuery,
   ])
-  useEffect(() => {
-    setValue(Key.gasPrice, gasPrice || "")
-    setValue(Key.feeValue, gasPrice ? ceil(times(fee?.gas, gasPrice)) : "")
-  }, [fee?.gas, gasPrice, setValue])
-
-  useEffect(() => {
-    setValue(Key.feeValue, ceil(times(fee?.gas, gasPrice)) || "")
-  }, [fee, gasPrice, setValue])
 
   const handleFailure = useCallback(() => {
     setTimeout(() => {
@@ -734,103 +833,27 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     window.location.reload()
   }, [form])
 
-  const handleSubmit = useCallback<SubmitHandler<Partial<Record<Key, string>>>>(
-    async (values) => {
-      const { value1, value2, feeSymbol, gasPrice } = values
-      try {
-        settingsModal.close()
-
-        let msgs: any = {}
-        if (type === Type.SWAP) {
-          if (!profitableQuery?.msg) {
-            return
-          }
-          msgs = getMsgs(profitableQuery?.msg, {
-            amount: `${value1}`,
-            minimumReceived: profitableQuery
-              ? calc.minimumReceived({
-                  expectedAmount: `${profitableQuery?.simulatedAmount}`,
-                  max_spread: String(slippageTolerance),
-                  commission: "0",
-                  decimals: tokenInfo1?.decimals,
-                })
-              : "0",
-            token: from,
-            beliefPrice: `${decimal(div(value1, value2), 18)}`,
-          })
-        } else {
-          msgs = await generateContractMessages(
-            {
-              [Type.PROVIDE]: {
-                type: Type.PROVIDE,
-                sender: `${walletAddress}`,
-                fromAmount: `${value1}`,
-                toAmount: `${value2}`,
-                from: `${from}`,
-                to: `${to}`,
-                slippage: slippageTolerance,
-              },
-              [Type.WITHDRAW]: {
-                type: Type.WITHDRAW,
-                sender: `${walletAddress}`,
-                amount: `${value1}`,
-                lpAddr: `${lpContract}`,
-              },
-            }[type] as any
-          )
-          msgs = msgs.map((msg: any) => {
-            return Array.isArray(msg) ? msg[0] : msg
-          })
-        }
-
-        console.log(msgs)
-
-        let txOptions: CreateTxOptions = {
-          msgs,
-          memo: undefined,
-          gasPrices: `${gasPrice}${
-            findTokenInfoBySymbolOrContractAddr(feeSymbol)?.contract_addr
-          }`,
-        }
-
-        const signMsg = await terra.tx.create(
-          [{ address: walletAddress }],
-          txOptions
-        )
-
-        txOptions.fee = signMsg.auth_info.fee
-        setValue(
-          Key.feeValue,
-          txOptions.fee.amount.get(feeAddress)?.amount.toString() || ""
-        )
-
-        const extensionResult = await terraExtensionPost(txOptions)
-
-        if (extensionResult) {
-          setResult(extensionResult)
-          return
-        }
-      } catch (error) {
-        console.error(error)
-        setResult(error as any)
+  const handleSubmit = useCallback(async () => {
+    try {
+      settingsModal.close()
+      if (!createTxOptions || !fee) {
+        return
       }
-    },
-    [
-      settingsModal,
-      type,
-      terra,
-      walletAddress,
-      terraExtensionPost,
-      generateContractMessages,
-      from,
-      to,
-      slippageTolerance,
-      tokenInfo1,
-      getMsgs,
-      profitableQuery,
-      lpContract,
-    ]
-  )
+
+      const extensionResult = await terraExtensionPost({
+        ...createTxOptions,
+        fee,
+      })
+
+      if (extensionResult) {
+        setResult(extensionResult)
+        return
+      }
+    } catch (error) {
+      console.error(error)
+      setResult(error as any)
+    }
+  }, [createTxOptions, fee, settingsModal, terraExtensionPost])
 
   const [result, setResult] = useState<TxResult | undefined>()
   // hotfix: prevent modal closing when virtual keyboard is opened

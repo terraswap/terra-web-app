@@ -1,7 +1,24 @@
-import { CreateTxOptions, Fee } from "@terra-money/terra.js"
+import { CreateTxOptions, Fee, LCDClient } from "@terra-money/terra.js"
 import { useLCDClient } from "@terra-money/wallet-provider"
 import { useEffect, useRef, useState } from "react"
 import useAddress from "./useAddress"
+
+export const calculateFee = async (
+  lcd: LCDClient,
+  walletAddress: string,
+  createTxOptions: CreateTxOptions
+) => {
+  try {
+    const tx = await lcd.tx.create(
+      [{ address: walletAddress }],
+      createTxOptions
+    )
+    return tx?.auth_info?.fee
+  } catch (error) {
+    console.log(error)
+  }
+  return undefined
+}
 
 const useFee = (createTxOptions?: CreateTxOptions) => {
   const terra = useLCDClient()
@@ -24,19 +41,16 @@ const useFee = (createTxOptions?: CreateTxOptions) => {
           createTxOptions &&
           calculatedTxOptions.current !== createTxOptions
         ) {
-          const tx = await terra.tx.create(
-            [{ address: walletAddress }],
+          const calculatedFee = await calculateFee(
+            terra,
+            walletAddress,
             createTxOptions
           )
 
           if (isAborted) {
             return
           }
-          if (tx?.auth_info?.fee) {
-            setFee(tx.auth_info.fee)
-          } else {
-            setFee(undefined)
-          }
+          setFee(calculatedFee)
         }
       } catch (error) {
         console.log(error)
@@ -55,7 +69,7 @@ const useFee = (createTxOptions?: CreateTxOptions) => {
     return () => {
       isAborted = true
     }
-  }, [terra.tx, createTxOptions, walletAddress])
+  }, [createTxOptions, walletAddress, terra])
 
   return { fee, isCalculating, createTxOptions: calculatedTxOptions.current }
 }

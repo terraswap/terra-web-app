@@ -91,9 +91,8 @@ export const validate = {
     const amount = symbol ? toAmount(value, symbol) : value
 
     if (
-      maxFee === "" ||
-      maxFee === undefined ||
-      feeValue === undefined ||
+      feeValue !== undefined &&
+      maxFee !== undefined &&
       gt(feeValue, maxFee)
     ) {
       return `You don't have enough balance to pay for ${formatAsset(
@@ -150,9 +149,12 @@ export const validate = {
 }
 
 /* data (utf-8) */
-export const toBase64 = (object: object) => {
+export const toBase64 = (object: object | string) => {
   try {
-    return Buffer.from(JSON.stringify(omitEmpty(object))).toString("base64")
+    if (typeof object === "object") {
+      return Buffer.from(JSON.stringify(omitEmpty(object))).toString("base64")
+    }
+    return Buffer.from(object).toString("base64")
   } catch (error) {
     return ""
   }

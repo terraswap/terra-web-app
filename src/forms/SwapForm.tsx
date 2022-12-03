@@ -1,31 +1,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import styled from "styled-components"
 import Container from "components/Container"
-import { SubmitHandler, useForm, WatchObserver } from "react-hook-form"
+import { useForm, WatchObserver } from "react-hook-form"
 import Result from "./Result"
 import TabView from "components/TabView"
 import { useSearchParams } from "react-router-dom"
 import { DEFAULT_MAX_SPREAD, LUNA, ULUNA } from "constants/constants"
-import { useNetwork, useAddress, useConnectModal } from "hooks"
-import {
-  lookup,
-  decimal,
-  toAmount,
-  findTokenInfoBySymbolOrContractAddr,
-} from "libs/parse"
+import { useAddress, useConnectModal } from "hooks"
+import { lookup, decimal, toAmount } from "libs/parse"
 import calc from "helpers/calc"
 import { PriceKey, BalanceKey } from "hooks/contractKeys"
 import Count from "components/Count"
-import { validate as v, placeholder, step, renderBalance } from "./formHelpers"
+import {
+  validate as v,
+  placeholder,
+  step,
+  renderBalance,
+  toBase64,
+} from "./formHelpers"
 import useSwapSelectToken from "./useSwapSelectToken"
 import SwapFormGroup from "./SwapFormGroup"
 import usePairs, { InitLP, useLpTokenInfos, useTokenInfos } from "rest/usePairs"
 import useBalance from "rest/useBalance"
-import { minus, gte, times, ceil, div } from "libs/math"
+import { minus, gte, div, lt } from "libs/math"
 import { TooltipIcon } from "components/Tooltip"
 import Tooltip from "lang/Tooltip.json"
 import useGasPrice from "rest/useGasPrice"
-import { Coins, CreateTxOptions } from "@terra-money/terra.js"
+import {
+  Coins,
+  CreateTxOptions,
+  MsgExecuteContract,
+} from "@terra-money/terra.js"
 import { Type } from "pages/Swap"
 import usePool from "rest/usePool"
 import { insertIf, isNativeToken } from "libs/utils"
@@ -45,11 +50,12 @@ import useLocalStorage from "libs/useLocalStorage"
 import useAutoRouter from "rest/useAutoRouter"
 import WarningModal from "components/Warning"
 import Disclaimer from "components/DisclaimerAgreement"
+import useFee, { calculateFee } from "hooks/useFee"
+import useFormData from "hooks/forms/useFormData"
 
 enum Key {
   value1 = "value1",
   value2 = "value2",
-  feeValue = "feeValue",
   feeSymbol = "feeSymbol",
   load = "load",
   symbol1 = "symbol1",
@@ -59,6 +65,22 @@ enum Key {
   maxFee = "maxFee",
   gasPrice = "gasPrice",
   poolLoading = "poolLoading",
+}
+
+type FormData = Record<Key, string>
+
+const defaultFormValues = {
+  [Key.value1]: "",
+  [Key.value2]: "",
+  [Key.feeSymbol]: LUNA,
+  [Key.load]: "",
+  [Key.symbol1]: "",
+  [Key.symbol2]: "",
+  [Key.max1]: "",
+  [Key.max2]: "",
+  [Key.maxFee]: "",
+  [Key.gasPrice]: "",
+  [Key.poolLoading]: "",
 }
 
 const priceKey = PriceKey.PAIR
@@ -74,6 +96,69 @@ const Warning = {
   FontWeight: "bold",
 }
 
+const getMsgs = (
+  _msg: any,
+  {
+    amount,
+    token,
+    minimumReceived,
+    beliefPrice,
+  }: {
+    amount?: string | number
+    token?: string
+    minimumReceived?: string | number
+    beliefPrice?: string | number
+  }
+) => {
+  const msg = MsgExecuteContract.fromData(
+    Array.isArray(_msg) ? { ..._msg[0] } : { ..._msg },
+    true
+  ) as any
+
+  if (msg?.execute_msg?.swap) {
+    msg.execute_msg.swap.belief_price = `${beliefPrice}`
+  }
+  if (msg?.execute_msg?.send?.msg?.swap) {
+    msg.execute_msg.send.msg.swap.belief_price = `${beliefPrice}`
+  }
+  if (
+    msg?.execute_msg?.send?.msg?.execute_swap_operations &&
+    typeof msg?.execute_msg?.send?.msg?.execute_swap_operations === "object"
+  ) {
+    msg.execute_msg.send.msg.execute_swap_operations.minimum_receive = parseInt(
+      `${minimumReceived}`,
+      10
+    ).toString()
+    if (isNativeToken(token || "")) {
+      msg.coins = Coins.fromString(toAmount(`${amount}`) + token)
+    }
+
+    const newMessage = toBase64(`${JSON.stringify(msg.execute_msg.send.msg)}`)
+    msg.execute_msg.send.msg = newMessage
+  } else if (
+    msg?.execute_msg?.send?.msg &&
+    typeof msg?.execute_msg?.send?.msg === "object"
+  ) {
+    const newMessage = toBase64(`${JSON.stringify(msg.execute_msg.send.msg)}`)
+    msg.execute_msg.send.msg = newMessage
+  }
+  if (msg?.execute_msg?.execute_swap_operations) {
+    msg.execute_msg.execute_swap_operations.minimum_receive = parseInt(
+      `${minimumReceived}`,
+      10
+    ).toString()
+    msg.execute_msg.execute_swap_operations.offer_amount = toAmount(
+      `${amount}`,
+      token
+    )
+
+    if (isNativeToken(token || "")) {
+      msg.coins = Coins.fromString(toAmount(`${amount}`) + token)
+    }
+  }
+  return [msg]
+}
+
 const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
   const connectModal = useConnectModal()
   const [isWarningModalConfirmed, setIsWarningModalConfirmed] = useState(false)
@@ -85,12 +170,11 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
 
   const tokenInfos = useTokenInfos()
   const lpTokenInfos = useLpTokenInfos()
+  const terra = useLCDClient()
 
   const { generateContractMessages } = useAPI()
-  const { fee } = useNetwork()
   const walletAddress = useAddress()
   const { post: terraExtensionPost } = useWallet()
-  const terra = useLCDClient()
   const settingsModal = useModal()
   const [slippageSettings, setSlippageSettings] =
     useLocalStorage<SettingValues>("slippage", {
@@ -115,21 +199,8 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     [Type.WITHDRAW]: BalanceKey.LPSTAKABLE,
   }[type]
 
-  const form = useForm({
-    defaultValues: {
-      [Key.value1]: "",
-      [Key.value2]: "",
-      [Key.feeValue]: "",
-      [Key.feeSymbol]: LUNA,
-      [Key.load]: "",
-      [Key.symbol1]: "",
-      [Key.symbol2]: "",
-      [Key.max1]: "",
-      [Key.max2]: "",
-      [Key.maxFee]: "",
-      [Key.gasPrice]: "",
-      [Key.poolLoading]: "",
-    },
+  const form = useForm<FormData>({
+    defaultValues: defaultFormValues,
     mode: "all",
     reValidateMode: "onChange",
   })
@@ -143,7 +214,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     resetField,
   } = form
   const [isReversed, setIsReversed] = useState(false)
-  const formData = watch()
+  const formData = useFormData(watch, defaultFormValues)
 
   useEffect(() => {
     if (!from && !to) {
@@ -194,6 +265,10 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
   const tokenInfo2 = useMemo(() => {
     return tokenInfos.get(to)
   }, [to, tokenInfos])
+
+  const feeTokenInfo = useMemo(() => {
+    return tokenInfos.get(formData[Key.feeSymbol])
+  }, [formData, tokenInfos])
 
   const pairSwitchable = useMemo(() => from !== "" && to !== "", [from, to])
 
@@ -339,6 +414,123 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     }
   }, [isWarningModalConfirmed, spread, warningModal])
 
+  const { gasPrice } = useGasPrice(formData[Key.feeSymbol])
+
+  const [createTxOptions, setCreateTxOptions] = useState<
+    CreateTxOptions | undefined
+  >(undefined)
+
+  const generateCreateTxOptions = useCallback(
+    async (
+      { value1, value2 }: { value1: string; value2: string },
+      additionalOptions: Partial<CreateTxOptions> = {}
+    ) => {
+      try {
+        let msgs: any = {}
+        if (type === Type.SWAP) {
+          if (
+            !profitableQuery?.msg ||
+            Number.isNaN(Number(value1)) ||
+            Number.isNaN(Number(value2))
+          ) {
+            return
+          }
+          msgs = getMsgs(profitableQuery?.msg, {
+            amount: `${value1}`,
+            minimumReceived: profitableQuery
+              ? calc.minimumReceived({
+                  expectedAmount: `${profitableQuery?.simulatedAmount}`,
+                  max_spread: String(slippageTolerance),
+                  commission: "0",
+                  decimals: tokenInfo1?.decimals,
+                })
+              : "0",
+            token: from,
+            beliefPrice: `${decimal(div(value1, value2), 18)}`,
+          })
+        } else {
+          msgs = await generateContractMessages(
+            {
+              [Type.PROVIDE]: {
+                type: Type.PROVIDE,
+                sender: `${walletAddress}`,
+                fromAmount: `${value1}`,
+                toAmount: `${value2}`,
+                from: `${from}`,
+                to: `${to}`,
+                slippage: slippageTolerance,
+              },
+              [Type.WITHDRAW]: {
+                type: Type.WITHDRAW,
+                sender: `${walletAddress}`,
+                amount: `${value1}`,
+                lpAddr: `${lpContract}`,
+              },
+            }[type] as any
+          )
+          msgs = msgs.map((msg: any) => {
+            return Array.isArray(msg) ? msg[0] : msg
+          })
+        }
+
+        const txOptions: CreateTxOptions = {
+          msgs,
+          memo: undefined,
+          gasPrices: `${gasPrice}${feeTokenInfo?.contract_addr}`,
+          ...additionalOptions,
+        }
+
+        return txOptions
+      } catch (error) {
+        console.log(error)
+      }
+      return undefined
+    },
+    [
+      feeTokenInfo,
+      from,
+      gasPrice,
+      generateContractMessages,
+      lpContract,
+      profitableQuery,
+      slippageTolerance,
+      to,
+      tokenInfo1?.decimals,
+      type,
+      walletAddress,
+    ]
+  )
+
+  useEffect(() => {
+    let isAborted = false
+
+    const { value1, value2 } = formData
+
+    generateCreateTxOptions({ value1, value2 }).then((res) => {
+      if (isAborted) {
+        return
+      }
+
+      setCreateTxOptions(res)
+    })
+
+    return () => {
+      isAborted = true
+    }
+  }, [formData, generateCreateTxOptions])
+
+  const { fee, isCalculating: isFeeCalculating } = useFee(createTxOptions)
+  const feeAmount = useMemo(() => {
+    if (!feeTokenInfo?.contract_addr) {
+      return undefined
+    }
+    return `${fee?.amount?.get(feeTokenInfo?.contract_addr)?.amount.toDP()}`
+  }, [fee, feeTokenInfo])
+
+  useEffect(() => {
+    trigger(Key.value1)
+  }, [trigger, feeAmount])
+
   const simulationContents = useMemo(() => {
     if (
       !(
@@ -412,14 +604,16 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
           </Count>
         ),
       }),
-      {
+      ...insertIf(walletAddress && formState?.isValid, {
         title: <TooltipIcon content={Tooltip.Swap.TxFee}>Tx Fee</TooltipIcon>,
-        content: (
+        content: isFeeCalculating ? (
+          "Calculating..."
+        ) : (
           <Count symbol={formData[Key.feeSymbol]}>
-            {lookup(formData[Key.feeValue])}
+            {feeAmount ? feeAmount : "-"}
           </Count>
         ),
-      },
+      }),
       ...insertIf(type === Type.SWAP && spread !== "", {
         title: <TooltipIcon content={Tooltip.Swap.Spread}>Spread</TooltipIcon>,
         content: (
@@ -456,91 +650,27 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
       }),
     ]
   }, [
+    feeAmount,
     formData,
-    type,
+    formState,
+    isFeeCalculating,
+    lpContract,
+    poolResult,
     profitableQuery,
     slippageTolerance,
-    tokenInfo1?.decimals,
-    poolResult,
-    lpContract,
     spread,
+    tokenInfo1?.decimals,
     tokenInfos,
+    type,
+    walletAddress,
   ])
 
-  const getMsgs = useCallback(
-    (
-      _msg: any,
-      {
-        amount,
-        token,
-        minimumReceived,
-        beliefPrice,
-      }: {
-        amount?: string | number
-        token?: string
-        minimumReceived?: string | number
-        beliefPrice?: string | number
-      }
-    ) => {
-      const msg = Array.isArray(_msg) ? _msg[0] : _msg
-
-      if (msg?.execute_msg?.swap) {
-        msg.execute_msg.swap.belief_price = `${beliefPrice}`
-      }
-      if (msg?.execute_msg?.send?.msg?.swap) {
-        msg.execute_msg.send.msg.swap.belief_price = `${beliefPrice}`
-      }
-      if (msg?.execute_msg?.send?.msg?.execute_swap_operations) {
-        msg.execute_msg.send.msg.execute_swap_operations.minimum_receive =
-          parseInt(`${minimumReceived}`, 10).toString()
-        if (isNativeToken(token || "")) {
-          msg.coins = Coins.fromString(toAmount(`${amount}`) + token)
-        }
-
-        msg.execute_msg.send.msg = btoa(
-          JSON.stringify(msg.execute_msg.send.msg)
-        )
-      } else if (msg?.execute_msg?.send?.msg) {
-        msg.execute_msg.send.msg = btoa(
-          JSON.stringify(msg.execute_msg.send.msg)
-        )
-      }
-      if (msg?.execute_msg?.execute_swap_operations) {
-        msg.execute_msg.execute_swap_operations.minimum_receive = parseInt(
-          `${minimumReceived}`,
-          10
-        ).toString()
-        msg.execute_msg.execute_swap_operations.offer_amount = toAmount(
-          `${amount}`,
-          token
-        )
-
-        if (isNativeToken(token || "")) {
-          msg.coins = Coins.fromString(toAmount(`${amount}`) + token)
-        }
-      }
-      return [msg]
-    },
-    []
-  )
-
-  const { gasPrice } = useGasPrice(formData[Key.feeSymbol])
-
   const validateForm = async (
-    key: Key.value1 | Key.value2 | Key.feeValue | Key.feeSymbol | Key.load,
+    key: Key.value1 | Key.value2 | Key.feeSymbol | Key.load,
     newValues?: Partial<typeof formData>
   ) => {
-    const {
-      value1,
-      value2,
-      symbol1,
-      symbol2,
-      max1,
-      max2,
-      feeValue,
-      feeSymbol,
-      maxFee,
-    } = { ...formData, ...(newValues || {}) }
+    const { value1, value2, symbol1, symbol2, max1, max2, feeSymbol, maxFee } =
+      { ...formData, ...(newValues || {}) }
 
     if (key === Key.value1) {
       return (
@@ -550,7 +680,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
           refvalue: value2,
           refsymbol: symbol2,
           isFrom: true,
-          feeValue,
+          feeValue: feeAmount,
           feeSymbol,
           maxFee,
           type,
@@ -714,14 +844,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     trigger,
     profitableQuery,
   ])
-  useEffect(() => {
-    setValue(Key.gasPrice, gasPrice || "")
-    setValue(Key.feeValue, gasPrice ? ceil(times(fee?.gas, gasPrice)) : "")
-  }, [fee?.gas, gasPrice, setValue])
-
-  useEffect(() => {
-    setValue(Key.feeValue, ceil(times(fee?.gas, gasPrice)) || "")
-  }, [fee, gasPrice, setValue])
 
   const handleFailure = useCallback(() => {
     setTimeout(() => {
@@ -734,103 +856,27 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
     window.location.reload()
   }, [form])
 
-  const handleSubmit = useCallback<SubmitHandler<Partial<Record<Key, string>>>>(
-    async (values) => {
-      const { value1, value2, feeSymbol, gasPrice } = values
-      try {
-        settingsModal.close()
-
-        let msgs: any = {}
-        if (type === Type.SWAP) {
-          if (!profitableQuery?.msg) {
-            return
-          }
-          msgs = getMsgs(profitableQuery?.msg, {
-            amount: `${value1}`,
-            minimumReceived: profitableQuery
-              ? calc.minimumReceived({
-                  expectedAmount: `${profitableQuery?.simulatedAmount}`,
-                  max_spread: String(slippageTolerance),
-                  commission: "0",
-                  decimals: tokenInfo1?.decimals,
-                })
-              : "0",
-            token: from,
-            beliefPrice: `${decimal(div(value1, value2), 18)}`,
-          })
-        } else {
-          msgs = await generateContractMessages(
-            {
-              [Type.PROVIDE]: {
-                type: Type.PROVIDE,
-                sender: `${walletAddress}`,
-                fromAmount: `${value1}`,
-                toAmount: `${value2}`,
-                from: `${from}`,
-                to: `${to}`,
-                slippage: slippageTolerance,
-              },
-              [Type.WITHDRAW]: {
-                type: Type.WITHDRAW,
-                sender: `${walletAddress}`,
-                amount: `${value1}`,
-                lpAddr: `${lpContract}`,
-              },
-            }[type] as any
-          )
-          msgs = msgs.map((msg: any) => {
-            return Array.isArray(msg) ? msg[0] : msg
-          })
-        }
-
-        console.log(msgs)
-
-        let txOptions: CreateTxOptions = {
-          msgs,
-          memo: undefined,
-          gasPrices: `${gasPrice}${
-            findTokenInfoBySymbolOrContractAddr(feeSymbol)?.contract_addr
-          }`,
-        }
-
-        const signMsg = await terra.tx.create(
-          [{ address: walletAddress }],
-          txOptions
-        )
-
-        txOptions.fee = signMsg.auth_info.fee
-        setValue(
-          Key.feeValue,
-          txOptions.fee.amount.get(feeAddress)?.amount.toString() || ""
-        )
-
-        const extensionResult = await terraExtensionPost(txOptions)
-
-        if (extensionResult) {
-          setResult(extensionResult)
-          return
-        }
-      } catch (error) {
-        console.error(error)
-        setResult(error as any)
+  const handleSubmit = useCallback(async () => {
+    try {
+      settingsModal.close()
+      if (!createTxOptions || !fee) {
+        return
       }
-    },
-    [
-      settingsModal,
-      type,
-      terra,
-      walletAddress,
-      terraExtensionPost,
-      generateContractMessages,
-      from,
-      to,
-      slippageTolerance,
-      tokenInfo1,
-      getMsgs,
-      profitableQuery,
-      lpContract,
-    ]
-  )
+
+      const extensionResult = await terraExtensionPost({
+        ...createTxOptions,
+        fee,
+      })
+
+      if (extensionResult) {
+        setResult(extensionResult)
+        return
+      }
+    } catch (error) {
+      console.error(error)
+      setResult(error as any)
+    }
+  }, [createTxOptions, fee, settingsModal, terraExtensionPost])
 
   const [result, setResult] = useState<TxResult | undefined>()
   // hotfix: prevent modal closing when virtual keyboard is opened
@@ -847,6 +893,88 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
       window.removeEventListener("resize", handleResize)
     }
   }, [settingsModal])
+
+  useEffect(() => {
+    let isAborted = false
+    const adjustMaxBalance = async () => {
+      const { value1, value2 } = formData
+      try {
+        if (
+          type !== Type.WITHDRAW &&
+          formData[Key.symbol1] === formData[Key.feeSymbol] &&
+          balance1 &&
+          feeTokenInfo &&
+          formData[Key.value1] === lookup(balance1, feeTokenInfo?.contract_addr)
+        ) {
+          const txOptions = await generateCreateTxOptions(
+            {
+              value1,
+              value2,
+            },
+            { gasAdjustment: 2 }
+          )
+          if (isAborted) {
+            return
+          }
+          if (txOptions) {
+            const calculatedFee = await calculateFee(
+              terra,
+              walletAddress,
+              txOptions
+            )
+
+            if (isAborted) {
+              return
+            }
+
+            const maxFeeAmount = `${
+              calculatedFee?.amount
+                ?.get(feeTokenInfo?.contract_addr)
+                ?.amount?.toDP?.() || ""
+            }`
+
+            if (maxFeeAmount) {
+              setValue(
+                Key.value1,
+                minus(
+                  value1,
+                  lookup(maxFeeAmount, feeTokenInfo?.contract_addr)
+                ),
+                { shouldDirty: true, shouldTouch: true, shouldValidate: true }
+              )
+            }
+          }
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    }
+
+    adjustMaxBalance()
+
+    return () => {
+      isAborted = true
+    }
+  }, [
+    balance1,
+    feeTokenInfo,
+    formData,
+    generateCreateTxOptions,
+    setValue,
+    terra,
+    type,
+    walletAddress,
+  ])
+
+  useEffect(() => {
+    if (lt(formData[Key.value1], 0)) {
+      setValue(Key.value1, "0")
+    }
+
+    if (lt(formData[Key.value2], 0)) {
+      setValue(Key.value2, "0")
+    }
+  }, [formData, setValue])
 
   return (
     <Wrapper>
@@ -954,28 +1082,21 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
               unit={selectToken1.button}
               assets={selectToken1.assets}
               focused={selectToken1.isOpen}
+              isLoading={
+                !!formData[Key.symbol1] &&
+                !!formData[Key.symbol2] &&
+                formData[Key.symbol1] === formData[Key.feeSymbol] &&
+                formData[Key.value1] ===
+                  lookup(balance1, feeTokenInfo?.contract_addr)
+              }
               max={
                 formData[Key.symbol1]
                   ? async () => {
-                      if (type === Type.WITHDRAW) {
-                        setValue(Key.value1, lookup(formData[Key.max1], from))
-                        trigger(Key.value1)
-                        return
-                      }
-
-                      let maxBalance = formData[Key.max1]
-                      // fee
-                      if (formData[Key.symbol1] === formData[Key.feeSymbol]) {
-                        if (gte(maxBalance, formData[Key.feeValue])) {
-                          maxBalance = minus(maxBalance, formData[Key.feeValue])
-                        } else {
-                          maxBalance = minus(maxBalance, maxBalance)
-                        }
-                      }
-
-                      maxBalance = lookup(maxBalance, from)
-                      setValue(Key.value1, maxBalance)
-                      trigger(Key.value1)
+                      setValue(Key.value1, lookup(balance1, from), {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                        shouldTouch: true,
+                      })
                     }
                   : undefined
               }
@@ -1024,8 +1145,6 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
                     }),
                 autoComplete: "off",
                 readOnly: true,
-                // [Type.PROVIDE, Type.WITHDRAW].includes(type) ||
-                // (!isReversed && isAutoRouterLoading),
                 onKeyDown: () => {
                   setIsReversed(true)
                 },
@@ -1095,7 +1214,7 @@ const SwapForm = ({ type, tabs }: { type: Type; tabs: TabViewProps }) => {
           </Container>
         </TabView>
       </form>
-      <WarningModal {...warningModal} />
+      <WarningModal {...warningModal} isOpen={false} />
     </Wrapper>
   )
 }

@@ -1,3 +1,4 @@
+import { toBase64 } from "forms/formHelpers"
 import { useCallback } from "react"
 import { useNetwork } from "."
 
@@ -17,7 +18,7 @@ export default () => {
         typeof msg === "string" ? toQueryMsg(msg) : JSON.stringify(msg)
       return `${
         baseUrl || lcd
-      }/cosmwasm/wasm/v1/contract/${contract}/smart/${window.btoa(query_msg)}`
+      }/cosmwasm/wasm/v1/contract/${contract}/smart/${toBase64(query_msg)}`
     },
     [lcd]
   )

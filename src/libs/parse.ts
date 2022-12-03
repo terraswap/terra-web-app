@@ -60,12 +60,14 @@ export const lookup: Formatter = (amount = "0", contract_addr, config) => {
     : new BigNumber(amount)
 
   return value
-    .dp(
-      config?.dp ??
-        (config?.integer ? 0 : value.gte(e) ? 2 : dp(contract_addr)),
-      rm
-    )
-    .toString()
+    ? value
+        .dp(
+          config?.dp ??
+            (config?.integer ? 0 : value.gte(e) ? 2 : dp(contract_addr)),
+          rm
+        )
+        .toString()
+    : ""
 }
 
 export const lookupSymbol = (symbol?: string) => {

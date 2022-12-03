@@ -259,11 +259,6 @@ const useAutoRouter = (params: Params) => {
     }
   }, [amount, from, msgs, querySimulate])
 
-  useEffect(() => {
-    console.log("simulatedAmounts")
-    console.log(simulatedAmounts)
-  }, [simulatedAmounts])
-
   const result = useMemo(() => {
     if (!from || !to || !type || !amount) {
       return { profitableQuery: undefined, isLoading: false }

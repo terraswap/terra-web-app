@@ -1,3 +1,4 @@
+import v1Pairs from "constants/v1-pairs.json"
 import { useAddress, useNetwork } from "hooks"
 import {
   UAUD as VAUD,
@@ -232,6 +233,10 @@ const useAPI = (version: ApiVersion = "v2") => {
       pairs: [],
     }
     let lastPair: (NativeInfo | AssetInfo)[] | null = null
+
+    if (version === "v1") {
+      return v1Pairs
+    }
 
     try {
       const url = `${apiHost}/pairs${
